@@ -79,15 +79,13 @@ impl Reader {
         for obj in pbf.iter() {
             match obj {
                 osmpbfreader::OsmObj::Node(node) => {
-                    self.nodes.insert(node.id,
-                                      Node {
-                                          id: node.id,
-                                          coord: Coord {
-                                              lon: node.lon,
-                                              lat: node.lat,
-                                          },
-                                          uses: 0,
-                                      });
+                    let mut n = Node::new();
+                    n.id = node.id;
+                    n.coord = Coord {
+                        lon: node.lon,
+                        lat: node.lat,
+                    };
+                    self.nodes.insert(node.id, n);
                 }
                 osmpbfreader::OsmObj::Way(way) => {
                     let mut properties = EdgeProperties::new();
@@ -143,6 +141,7 @@ fn test_count_nodes() {
     let ways = vec![Way {
                         id: 0,
                         nodes: vec![1, 2, 3],
+                        properties: EdgeProperties::new(),
                     }];
     let mut nodes = HashMap::new();
     nodes.insert(1, Node::new());
@@ -171,10 +170,12 @@ fn test_split() {
     let ways = vec![Way {
                         id: 0,
                         nodes: vec![1, 2, 3],
+                        properties: EdgeProperties::new(),
                     },
                     Way {
                         id: 0,
                         nodes: vec![4, 5, 2],
+                        properties: EdgeProperties::new(),
                     }];
     let mut r = Reader {
         nodes: nodes,

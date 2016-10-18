@@ -15,6 +15,16 @@ pub struct Node {
     pub uses: i16,
 }
 
+impl Node {
+    pub fn new() -> Node {
+        Node {
+            id: 0,
+            coord: Coord { lon: 0., lat: 0. },
+            uses: 0,
+        }
+    }
+}
+
 // Edge is a topological representation with only two extremities and no geometry
 pub struct Edge {
     pub id: i64,
@@ -66,6 +76,7 @@ fn test_as_wkt() {
         geometry: vec![Coord { lon: 0., lat: 0. },
                        Coord { lon: 1., lat: 0. },
                        Coord { lon: 0., lat: 1. }],
+        properties: EdgeProperties::new(),
     };
     assert!("LINESTRING(0.0000000 0.0000000, 1.0000000 0.0000000, 0.0000000 1.0000000)" ==
             edge.as_wkt());
