@@ -14,7 +14,8 @@ pub fn write(nodes: Vec<Node>, edges: Vec<Edge>) {
                      "car_forward",
                      "car_backward",
                      "bike_forward",
-                     "bike_backward"])
+                     "bike_backward",
+                     "wkt"])
         .expect("CSV: unable to write edge header");
     for edge in edges {
         edges_csv.encode((edge.id,
@@ -25,7 +26,8 @@ pub fn write(nodes: Vec<Node>, edges: Vec<Edge>) {
                      edge.properties.car_forward,
                      edge.properties.car_backward,
                      edge.properties.bike_forward,
-                     edge.properties.bike_backward))
+                     edge.properties.bike_backward,
+                     edge.as_wkt()))
             .expect("CSV: unable to write edge");
     }
 
