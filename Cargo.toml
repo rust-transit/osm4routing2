@@ -1,0 +1,8 @@
+[package]
+name = "osm4routing2"
+version = "0.1.0"
+authors = ["Tristram Gräbener <tristramg@gmail.com>"]
+
+[dependencies]
+osmpbfreader = "0.3"
+csv = "0.14.7"

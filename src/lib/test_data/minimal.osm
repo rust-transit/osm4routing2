@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version='0.6' upload='true' generator='JOSM'>
+  <node id='8' timestamp='1970-01-01T00:00:01Z' visible='true' version='1' changeset='1' lat='-1.891758' lon='1.9275752' />
+  <node id='10' timestamp='1970-01-01T00:00:01Z' visible='true' version='1' changeset='1' lat='-1.9283254' lon='2.5881883' />
+  <way id='12' action='modify' timestamp='1970-01-01T00:00:01Z' visible='true' version='1' changeset='1'>
+    <nd ref='8' />
+    <nd ref='10' />
+    <tag k='highway' v='secondary' />
+  </way>
+</osm>
