@@ -5,7 +5,7 @@ authors = ["Tristram Gräbener <tristramg@gmail.com>"]
 description = "Convert OpenStreetMap data into routing friendly CSV"
 homepage = "https://github.com/Tristramg/osm4routing2"
 readme = "readme.md"
-licence = "MIT"
+license = "MIT"
 license-file = "LICENCE.md"
 
 [dependencies]
