@@ -108,12 +108,11 @@ impl Reader {
     }
 
 
-    fn nodes(&self) -> Vec<Node> {
+    fn nodes(self) -> Vec<Node> {
         self.nodes
-            .iter()
+            .into_iter()
             .map(|(_, node)| node)
             .filter(|node| node.uses > 1)
-            .map(|n| n.clone())
             .collect()
     }
 
@@ -127,7 +126,8 @@ pub fn read(filename: &str) -> Result<(Vec<Node>, Vec<Edge>), String> {
     let mut r = Reader::new();
     try!(r.read(filename));
     r.count_nodes_uses();
-    Ok((r.nodes(), r.edges()))
+    let edges = r.edges();
+    Ok((r.nodes(), edges)
 }
 
 #[test]
