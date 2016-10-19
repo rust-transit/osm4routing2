@@ -6,11 +6,11 @@ description = "Convert OpenStreetMap data into routing friendly CSV"
 homepage = "https://github.com/Tristramg/osm4routing2"
 readme = "readme.md"
 license = "MIT"
-license-file = "LICENCE.md"
 
 [dependencies]
 osmpbfreader = "0.3"
 csv = "0.14.7"
+docopt = "0.6.86"
 
 [lib]
 name = "osm4routing"

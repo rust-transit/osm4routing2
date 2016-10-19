@@ -72,9 +72,9 @@ impl Reader {
         result
     }
 
-    fn read(&mut self, filename: &str) {
+    fn read(&mut self, filename: &str) -> Result<(), String> {
         let path = std::path::Path::new(filename);
-        let r = std::fs::File::open(&path).unwrap();
+        let r = try!(std::fs::File::open(&path).map_err(|e| e.to_string()));
         let mut pbf = osmpbfreader::OsmPbfReader::new(r);
         for obj in pbf.iter() {
             match obj {
@@ -104,6 +104,7 @@ impl Reader {
                 osmpbfreader::OsmObj::Relation(_) => {}
             }
         }
+        Ok(())
     }
 
 
@@ -122,11 +123,11 @@ impl Reader {
 }
 
 // Read all the nodes and ways of the osm.pbf file
-pub fn read(filename: &str) -> (Vec<Node>, Vec<Edge>) {
+pub fn read(filename: &str) -> Result<(Vec<Node>, Vec<Edge>), String> {
     let mut r = Reader::new();
-    r.read(filename);
+    try!(r.read(filename));
     r.count_nodes_uses();
-    return (r.nodes(), r.edges());
+    Ok((r.nodes(), r.edges()))
 }
 
 #[test]
