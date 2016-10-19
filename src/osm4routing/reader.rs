@@ -131,7 +131,7 @@ pub fn read(filename: &str) -> (Vec<Node>, Vec<Edge>) {
 
 #[test]
 fn test_real_all() {
-    let (nodes, ways) = read("src/lib/test_data/minimal.osm.pbf");
+    let (nodes, ways) = read("src/osm4routing/test_data/minimal.osm.pbf");
     assert_eq!(2, nodes.len());
     assert_eq!(1, ways.len());
 }

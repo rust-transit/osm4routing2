@@ -1,8 +1,6 @@
 extern crate csv;
-extern crate postgres;
 use models::*;
 use std;
-// use postgres::{Connection, TlsMode};
 
 
 pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
