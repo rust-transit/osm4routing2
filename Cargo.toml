@@ -6,3 +6,7 @@ authors = ["Tristram Gräbener <tristramg@gmail.com>"]
 [dependencies]
 osmpbfreader = "0.3"
 csv = "0.14.7"
+
+[lib]
+name = "osm4routing"
+path = "src/osm4routing/mod.rs"

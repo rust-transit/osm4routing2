@@ -1,4 +1,4 @@
-use lib::categorize::EdgeProperties;
+use categorize::EdgeProperties;
 
 // Coord are coordinates in decimal degress WGS84
 #[derive(Copy, Clone)]

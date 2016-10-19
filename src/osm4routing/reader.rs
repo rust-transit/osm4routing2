@@ -1,7 +1,7 @@
 extern crate osmpbfreader;
 use std::collections::HashMap;
-use lib::models::*;
-use lib::categorize::*;
+use models::*;
+use categorize::*;
 use std;
 
 // Way as represented in OpenStreetMap

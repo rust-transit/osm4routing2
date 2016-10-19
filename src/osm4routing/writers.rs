@@ -1,9 +1,11 @@
 extern crate csv;
-use lib::models::*;
+extern crate postgres;
+use models::*;
 use std;
+// use postgres::{Connection, TlsMode};
 
 
-pub fn write(nodes: Vec<Node>, edges: Vec<Edge>) {
+pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
     let edges_path = std::path::Path::new("edges.csv");
     let mut edges_csv = csv::Writer::from_file(edges_path).unwrap();
     edges_csv.encode(vec!["id",
@@ -39,3 +41,5 @@ pub fn write(nodes: Vec<Node>, edges: Vec<Edge>) {
             .expect("CSV: unable to write node");
     }
 }
+
+// pub fn pg(nodes: Vec<Node>, edges: Vec<Edge>) {}

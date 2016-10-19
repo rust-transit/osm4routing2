@@ -1,5 +1,6 @@
-mod lib;
+extern crate osm4routing;
+
 fn main() {
-    let (nodes, edges) = lib::reader::read("idf.osm.pbf");
-    lib::writers::write(nodes, edges);
+    let (nodes, edges) = osm4routing::reader::read("idf.osm.pbf");
+    osm4routing::writers::csv(nodes, edges);
 }
