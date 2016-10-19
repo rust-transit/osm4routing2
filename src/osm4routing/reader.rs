@@ -108,12 +108,11 @@ impl Reader {
     }
 
 
-    fn nodes(&self) -> Vec<Node> {
+    fn nodes(self) -> Vec<Node> {
         self.nodes
-            .iter()
+            .into_iter()
             .map(|(_, node)| node)
             .filter(|node| node.uses > 1)
-            .map(|n| n.clone())
             .collect()
     }
 
@@ -127,12 +126,13 @@ pub fn read(filename: &str) -> Result<(Vec<Node>, Vec<Edge>), String> {
     let mut r = Reader::new();
     try!(r.read(filename));
     r.count_nodes_uses();
-    Ok((r.nodes(), r.edges()))
+    let edges = r.edges();
+    Ok((r.nodes(), edges))
 }
 
 #[test]
 fn test_real_all() {
-    let (nodes, ways) = read("src/osm4routing/test_data/minimal.osm.pbf");
+    let (nodes, ways) = read("src/osm4routing/test_data/minimal.osm.pbf").unwrap();
     assert_eq!(2, nodes.len());
     assert_eq!(1, ways.len());
 }
@@ -188,7 +188,7 @@ fn test_split() {
 }
 
 #[test]
-#[should_panic]
 fn test_wrong_file() {
-    read("i hope you have no file name like this one");
+    let r = read("i hope you have no file name like this one");
+    assert!(r.is_err());
 }
