@@ -1,5 +1,5 @@
 extern crate osmpbfreader;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use models::*;
 use categorize::*;
 use std;
@@ -14,6 +14,7 @@ struct Way {
 struct Reader {
     nodes: HashMap<i64, Node>,
     ways: Vec<Way>,
+    nodes_to_keep: HashSet<i64>,
 }
 
 impl Reader {
@@ -21,6 +22,7 @@ impl Reader {
         Reader {
             nodes: HashMap::new(),
             ways: Vec::new(),
+            nodes_to_keep: HashSet::new(),
         }
     }
 
@@ -72,21 +74,10 @@ impl Reader {
         result
     }
 
-    fn read(&mut self, filename: &str) -> Result<(), String> {
-        let path = std::path::Path::new(filename);
-        let r = try!(std::fs::File::open(&path).map_err(|e| e.to_string()));
-        let mut pbf = osmpbfreader::OsmPbfReader::new(r);
+    fn read_ways(&mut self, file: std::fs::File) {
+        let mut pbf = osmpbfreader::OsmPbfReader::new(file);
         for obj in pbf.iter() {
             match obj {
-                osmpbfreader::OsmObj::Node(node) => {
-                    let mut n = Node::new();
-                    n.id = node.id;
-                    n.coord = Coord {
-                        lon: node.lon,
-                        lat: node.lat,
-                    };
-                    self.nodes.insert(node.id, n);
-                }
                 osmpbfreader::OsmObj::Way(way) => {
                     let mut properties = EdgeProperties::new();
                     for (key, val) in way.tags {
@@ -94,19 +85,43 @@ impl Reader {
                     }
                     properties.normalize();
                     if properties.accessible() {
+                        for node in &way.nodes {
+                            self.nodes_to_keep.insert(node.clone());
+                        }
                         self.ways.push(Way {
                             id: way.id,
                             nodes: way.nodes,
                             properties: properties,
-                        })
+                        });
+
                     }
                 }
-                osmpbfreader::OsmObj::Relation(_) => {}
+                _ => {}
             }
         }
-        Ok(())
     }
 
+    fn read_nodes(&mut self, file: std::fs::File) {
+        let mut pbf = osmpbfreader::OsmPbfReader::new(file);
+        self.nodes.reserve(self.nodes_to_keep.len());
+        for obj in pbf.iter() {
+            match obj {
+                osmpbfreader::OsmObj::Node(node) => {
+                    if self.nodes_to_keep.contains(&node.id) {
+                        self.nodes_to_keep.remove(&node.id);
+                        let mut n = Node::new();
+                        n.id = node.id;
+                        n.coord = Coord {
+                            lon: node.lon,
+                            lat: node.lat,
+                        };
+                        self.nodes.insert(node.id, n);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
 
     fn nodes(self) -> Vec<Node> {
         self.nodes
@@ -124,7 +139,11 @@ impl Reader {
 // Read all the nodes and ways of the osm.pbf file
 pub fn read(filename: &str) -> Result<(Vec<Node>, Vec<Edge>), String> {
     let mut r = Reader::new();
-    try!(r.read(filename));
+    let path = std::path::Path::new(filename);
+    let file = try!(std::fs::File::open(&path).map_err(|e| e.to_string()));
+    r.read_ways(file);
+    let file_nodes = try!(std::fs::File::open(&path).map_err(|e| e.to_string()));
+    r.read_nodes(file_nodes);
     r.count_nodes_uses();
     let edges = r.edges();
     Ok((r.nodes(), edges))
@@ -151,6 +170,7 @@ fn test_count_nodes() {
     let mut r = Reader {
         ways: ways,
         nodes: nodes,
+        nodes_to_keep: HashSet::new(),
     };
     r.count_nodes_uses();
     assert_eq!(2, r.nodes[&1].uses);
@@ -181,6 +201,7 @@ fn test_split() {
     let mut r = Reader {
         nodes: nodes,
         ways: ways,
+        nodes_to_keep: HashSet::new(),
     };
     r.count_nodes_uses();
     let edges = r.edges();
