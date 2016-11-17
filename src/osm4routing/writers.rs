@@ -3,7 +3,7 @@ use models::*;
 use std;
 
 
-pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
+pub fn csv_writer(nodes: Vec<Node>, edges: Vec<Edge>) {
     let edges_path = std::path::Path::new("edges.csv");
     let mut edges_csv = csv::Writer::from_file(edges_path).unwrap();
     edges_csv.encode(vec!["id",
