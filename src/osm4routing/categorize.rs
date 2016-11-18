@@ -96,7 +96,7 @@ impl EdgeProperties {
         match key {
             "highway" => {
                 match val {
-                    "cycleway" | "path" | "foot_way" | "steps" | "pedestrian" => {
+                    "cycleway" | "path" | "footway" | "steps" | "pedestrian" => {
                         self.bike_forward = BIKE_TRACK;
                         self.foot = FOOT_ALLOWED;
                     }
