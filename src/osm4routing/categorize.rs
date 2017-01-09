@@ -123,12 +123,12 @@ impl EdgeProperties {
                     }
                     "motorway" | "motorway_link" => {
                         self.car_forward = CAR_MOTORWAY;
-                        self.foot = CAR_FORBIDDEN;
+                        self.foot = FOOT_FORBIDDEN;
                         self.bike_forward = BIKE_FORBIDDEN;
                     }
                     "trunk" | "trunk_link" => {
                         self.car_forward = CAR_TRUNK;
-                        self.foot = CAR_FORBIDDEN;
+                        self.foot = FOOT_FORBIDDEN;
                         self.bike_forward = BIKE_FORBIDDEN;
                     }
                     _ => {}
