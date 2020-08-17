@@ -80,7 +80,7 @@ impl EdgeProperties {
     }
 
     // Accessible means that at least one mean of transportation can use it in one direction
-    pub fn accessible(&self) -> bool {
+    pub fn accessible(self) -> bool {
         self.bike_forward != BIKE_FORBIDDEN || self.bike_backward != BIKE_FORBIDDEN ||
         self.car_forward != CAR_FORBIDDEN || self.car_backward != CAR_FORBIDDEN ||
         self.foot != FOOT_FORBIDDEN
