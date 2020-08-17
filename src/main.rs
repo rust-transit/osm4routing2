@@ -4,7 +4,7 @@ use docopt::Docopt;
 
 fn main() {
 
-    const USAGE: &'static str = "
+    const USAGE: &str = "
 Usage: osm4routing <source.osm.pbf>";
     let args = Docopt::new(USAGE).unwrap().parse().unwrap_or_else(|e| e.exit());
     let filename = args.get_str("<source.osm.pbf>");

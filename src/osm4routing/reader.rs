@@ -60,9 +60,9 @@ impl Reader {
                 if node.uses > 1 {
                     result.push(Edge {
                         id: way.id,
-                        source: source,
+                        source,
                         target: node_id,
-                        geometry: geometry,
+                        geometry,
                         properties: way.properties,
                     });
 
@@ -79,7 +79,7 @@ impl Reader {
         for obj in pbf.iter() {
             match obj {
                 osmpbfreader::OsmObj::Way(way) => {
-                    let mut properties = EdgeProperties::new();
+                    let mut properties = EdgeProperties::default();
                     for (key, val) in way.tags {
                         properties.update(key, val);
                     }
@@ -91,7 +91,7 @@ impl Reader {
                         self.ways.push(Way {
                             id: way.id,
                             nodes: way.nodes,
-                            properties: properties,
+                            properties,
                         });
 
                     }
@@ -109,7 +109,7 @@ impl Reader {
                 osmpbfreader::OsmObj::Node(node) => {
                     if self.nodes_to_keep.contains(&node.id) {
                         self.nodes_to_keep.remove(&node.id);
-                        let mut n = Node::new();
+                        let mut n = Node::default();
                         n.id = node.id;
                         n.coord = Coord {
                             lon: node.lon,
@@ -161,15 +161,15 @@ fn test_count_nodes() {
     let ways = vec![Way {
                         id: 0,
                         nodes: vec![1, 2, 3],
-                        properties: EdgeProperties::new(),
+                        properties: EdgeProperties::default(),
                     }];
     let mut nodes = HashMap::new();
-    nodes.insert(1, Node::new());
-    nodes.insert(2, Node::new());
-    nodes.insert(3, Node::new());
+    nodes.insert(1, Node::default());
+    nodes.insert(2, Node::default());
+    nodes.insert(3, Node::default());
     let mut r = Reader {
-        ways: ways,
-        nodes: nodes,
+        ways,
+        nodes,
         nodes_to_keep: HashSet::new(),
     };
     r.count_nodes_uses();
@@ -183,24 +183,24 @@ fn test_count_nodes() {
 #[test]
 fn test_split() {
     let mut nodes = HashMap::new();
-    nodes.insert(1, Node::new());
-    nodes.insert(2, Node::new());
-    nodes.insert(3, Node::new());
-    nodes.insert(4, Node::new());
-    nodes.insert(5, Node::new());
+    nodes.insert(1, Node::default());
+    nodes.insert(2, Node::default());
+    nodes.insert(3, Node::default());
+    nodes.insert(4, Node::default());
+    nodes.insert(5, Node::default());
     let ways = vec![Way {
                         id: 0,
                         nodes: vec![1, 2, 3],
-                        properties: EdgeProperties::new(),
+                        properties: EdgeProperties::default(),
                     },
                     Way {
                         id: 0,
                         nodes: vec![4, 5, 2],
-                        properties: EdgeProperties::new(),
+                        properties: EdgeProperties::default(),
                     }];
     let mut r = Reader {
-        nodes: nodes,
-        ways: ways,
+        nodes,
+        ways,
         nodes_to_keep: HashSet::new(),
     };
     r.count_nodes_uses();

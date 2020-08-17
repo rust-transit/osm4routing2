@@ -1,28 +1,18 @@
 use categorize::EdgeProperties;
 
 // Coord are coordinates in decimal degress WGS84
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct Coord {
     pub lon: f64,
     pub lat: f64,
 }
 
 // Node is the OpenStreetMap node
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct Node {
     pub id: i64,
     pub coord: Coord,
     pub uses: i16,
-}
-
-impl Node {
-    pub fn new() -> Node {
-        Node {
-            id: 0,
-            coord: Coord { lon: 0., lat: 0. },
-            uses: 0,
-        }
-    }
 }
 
 // Edge is a topological representation with only two extremities and no geometry
@@ -52,7 +42,7 @@ impl Edge {
 }
 
 pub fn distance(start: Coord, end: Coord) -> f64 {
-    let r: f64 = 6378100.0;
+    let r: f64 = 6_378_100.0;
 
     let d_lon: f64 = (end.lon - start.lon).to_radians();
     let d_lat: f64 = (end.lat - start.lat).to_radians();
@@ -63,7 +53,7 @@ pub fn distance(start: Coord, end: Coord) -> f64 {
                  ((d_lon / 2.0).sin()) * ((d_lon / 2.0).sin()) * (lat1.cos()) * (lat2.cos());
     let c: f64 = 2.0 * ((a.sqrt()).atan2((1.0 - a).sqrt()));
 
-    return r * c;
+    r * c
 }
 
 
@@ -76,7 +66,7 @@ fn test_as_wkt() {
         geometry: vec![Coord { lon: 0., lat: 0. },
                        Coord { lon: 1., lat: 0. },
                        Coord { lon: 0., lat: 1. }],
-        properties: EdgeProperties::new(),
+        properties: EdgeProperties::default(),
     };
     assert!("LINESTRING(0.0000000 0.0000000, 1.0000000 0.0000000, 0.0000000 1.0000000)" ==
             edge.as_wkt());

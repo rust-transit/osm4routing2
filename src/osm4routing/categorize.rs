@@ -34,7 +34,7 @@ const BIKE_TRACK: i8 = 5;
 
 
 // Edgeself contains what mode can use the edge in each direction
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct EdgeProperties {
     pub foot: i8,
     pub car_forward: i8,
@@ -44,7 +44,7 @@ pub struct EdgeProperties {
 }
 
 impl EdgeProperties {
-    pub fn new() -> EdgeProperties {
+    pub fn default() -> EdgeProperties {
         EdgeProperties {
             foot: UNKNOWN,
             car_forward: UNKNOWN,
@@ -195,7 +195,7 @@ impl EdgeProperties {
 
 #[test]
 fn test_accessible() {
-    let mut p = EdgeProperties::new();
+    let mut p = EdgeProperties::default();
     p.normalize();
     assert!(!p.accessible());
 
@@ -205,7 +205,7 @@ fn test_accessible() {
 
 #[test]
 fn test_normalize() {
-    let mut p = EdgeProperties::new();
+    let mut p = EdgeProperties::default();
     p.bike_forward = BIKE_LANE;
     p.normalize();
     assert_eq!(BIKE_LANE, p.bike_backward);
@@ -221,7 +221,7 @@ fn test_normalize() {
 
 #[test]
 fn test_update() {
-    let mut p = EdgeProperties::new();
+    let mut p = EdgeProperties::default();
     p.update_with_str("highway", "secondary");
     assert_eq!(CAR_SECONDARY, p.car_forward);
 
