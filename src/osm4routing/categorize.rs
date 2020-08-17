@@ -177,15 +177,10 @@ impl EdgeProperties {
                     _ => {}
                 }
             }
-            "junction" => {
-                match val {
-                    "roundabout" => {
-                        self.car_backward = CAR_FORBIDDEN;
-                        if self.bike_backward == UNKNOWN {
-                            self.bike_backward = BIKE_FORBIDDEN;
-                        }
-                    }
-                    _ => {}
+            "junction" => if val == "roundabout" {
+                    self.car_backward = CAR_FORBIDDEN;
+                    if self.bike_backward == UNKNOWN {
+                        self.bike_backward = BIKE_FORBIDDEN;
                 }
             }
             _ => {}

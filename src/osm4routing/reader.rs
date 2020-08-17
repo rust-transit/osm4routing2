@@ -77,8 +77,7 @@ impl Reader {
     fn read_ways(&mut self, file: std::fs::File) {
         let mut pbf = osmpbfreader::OsmPbfReader::new(file);
         for obj in pbf.iter() {
-            match obj {
-                osmpbfreader::OsmObj::Way(way) => {
+            if let osmpbfreader::OsmObj::Way(way) = obj {
                     let mut properties = EdgeProperties::default();
                     for (key, val) in way.tags {
                         properties.update(key, val);
@@ -95,8 +94,6 @@ impl Reader {
                         });
 
                     }
-                }
-                _ => {}
             }
         }
     }
@@ -105,8 +102,7 @@ impl Reader {
         let mut pbf = osmpbfreader::OsmPbfReader::new(file);
         self.nodes.reserve(self.nodes_to_keep.len());
         for obj in pbf.iter() {
-            match obj {
-                osmpbfreader::OsmObj::Node(node) => {
+            if let osmpbfreader::OsmObj::Node(node) = obj {
                     if self.nodes_to_keep.contains(&node.id) {
                         self.nodes_to_keep.remove(&node.id);
                         let mut n = Node::default();
@@ -117,8 +113,6 @@ impl Reader {
                         };
                         self.nodes.insert(node.id, n);
                     }
-                }
-                _ => {}
             }
         }
     }
