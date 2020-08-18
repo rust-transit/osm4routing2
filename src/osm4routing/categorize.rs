@@ -32,9 +32,8 @@ const BIKE_BUSWAY: i8 = 4;
 // BIKE_TRACK is a physically separated for any other traffic
 const BIKE_TRACK: i8 = 5;
 
-
 // Edgeself contains what mode can use the edge in each direction
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct EdgeProperties {
     pub foot: i8,
     pub car_forward: i8,
@@ -44,7 +43,7 @@ pub struct EdgeProperties {
 }
 
 impl EdgeProperties {
-    pub fn new() -> EdgeProperties {
+    pub fn default() -> EdgeProperties {
         EdgeProperties {
             foot: UNKNOWN,
             car_forward: UNKNOWN,
@@ -80,10 +79,12 @@ impl EdgeProperties {
     }
 
     // Accessible means that at least one mean of transportation can use it in one direction
-    pub fn accessible(&self) -> bool {
-        self.bike_forward != BIKE_FORBIDDEN || self.bike_backward != BIKE_FORBIDDEN ||
-        self.car_forward != CAR_FORBIDDEN || self.car_backward != CAR_FORBIDDEN ||
-        self.foot != FOOT_FORBIDDEN
+    pub fn accessible(self) -> bool {
+        self.bike_forward != BIKE_FORBIDDEN
+            || self.bike_backward != BIKE_FORBIDDEN
+            || self.car_forward != CAR_FORBIDDEN
+            || self.car_backward != CAR_FORBIDDEN
+            || self.foot != FOOT_FORBIDDEN
     }
 
     pub fn update(&mut self, key_string: String, val_string: String) {
@@ -94,98 +95,82 @@ impl EdgeProperties {
 
     pub fn update_with_str(&mut self, key: &str, val: &str) {
         match key {
-            "highway" => {
-                match val {
-                    "cycleway" | "path" | "footway" | "steps" | "pedestrian" => {
-                        self.bike_forward = BIKE_TRACK;
-                        self.foot = FOOT_ALLOWED;
-                    }
-                    "primary" | "primary_link" => {
-                        self.car_forward = CAR_PRIMARY;
-                        self.foot = FOOT_ALLOWED;
-                        self.bike_forward = BIKE_ALLOWED;
-                    }
-                    "secondary" => {
-                        self.car_forward = CAR_SECONDARY;
-                        self.foot = FOOT_ALLOWED;
-                        self.bike_forward = BIKE_ALLOWED;
-                    }
-                    "tertiary" => {
-                        self.car_forward = CAR_TERTIARY;
-                        self.foot = FOOT_ALLOWED;
-                        self.bike_forward = BIKE_ALLOWED;
-                    }
-                    "unclassified" | "residential" | "living_street" | "road" | "service" |
-                    "track" => {
-                        self.car_forward = CAR_RESIDENTIAL;
-                        self.foot = FOOT_ALLOWED;
-                        self.bike_forward = BIKE_ALLOWED;
-                    }
-                    "motorway" | "motorway_link" => {
-                        self.car_forward = CAR_MOTORWAY;
-                        self.foot = FOOT_FORBIDDEN;
-                        self.bike_forward = BIKE_FORBIDDEN;
-                    }
-                    "trunk" | "trunk_link" => {
-                        self.car_forward = CAR_TRUNK;
-                        self.foot = FOOT_FORBIDDEN;
-                        self.bike_forward = BIKE_FORBIDDEN;
-                    }
-                    _ => {}
+            "highway" => match val {
+                "cycleway" | "path" | "footway" | "steps" | "pedestrian" => {
+                    self.bike_forward = BIKE_TRACK;
+                    self.foot = FOOT_ALLOWED;
                 }
-            }
-            "pedestrian" | "foot" => {
-                match val {
-                    "no" => self.foot = FOOT_FORBIDDEN,
-                    _ => self.foot = FOOT_ALLOWED,
+                "primary" | "primary_link" => {
+                    self.car_forward = CAR_PRIMARY;
+                    self.foot = FOOT_ALLOWED;
+                    self.bike_forward = BIKE_ALLOWED;
                 }
-            }
+                "secondary" => {
+                    self.car_forward = CAR_SECONDARY;
+                    self.foot = FOOT_ALLOWED;
+                    self.bike_forward = BIKE_ALLOWED;
+                }
+                "tertiary" => {
+                    self.car_forward = CAR_TERTIARY;
+                    self.foot = FOOT_ALLOWED;
+                    self.bike_forward = BIKE_ALLOWED;
+                }
+                "unclassified" | "residential" | "living_street" | "road" | "service" | "track" => {
+                    self.car_forward = CAR_RESIDENTIAL;
+                    self.foot = FOOT_ALLOWED;
+                    self.bike_forward = BIKE_ALLOWED;
+                }
+                "motorway" | "motorway_link" => {
+                    self.car_forward = CAR_MOTORWAY;
+                    self.foot = FOOT_FORBIDDEN;
+                    self.bike_forward = BIKE_FORBIDDEN;
+                }
+                "trunk" | "trunk_link" => {
+                    self.car_forward = CAR_TRUNK;
+                    self.foot = FOOT_FORBIDDEN;
+                    self.bike_forward = BIKE_FORBIDDEN;
+                }
+                _ => {}
+            },
+            "pedestrian" | "foot" => match val {
+                "no" => self.foot = FOOT_FORBIDDEN,
+                _ => self.foot = FOOT_ALLOWED,
+            },
 
             // http://wiki.openstreetmap.org/wiki/Cycleway
             // http://wiki.openstreetmap.org/wiki/Map_Features#Cycleway
-            "cycleway" => {
-                match val {
-                    "track" => self.bike_forward = BIKE_TRACK,
-                    "opposite_track" => self.bike_backward = BIKE_TRACK,
-                    "opposite" => self.bike_backward = BIKE_ALLOWED,
-                    "share_busway" => self.bike_forward = BIKE_BUSWAY,
-                    "lane_left" | "opposite_lane" => self.bike_backward = BIKE_LANE,
-                    _ => self.bike_forward = BIKE_LANE,
-                }
-            }
+            "cycleway" => match val {
+                "track" => self.bike_forward = BIKE_TRACK,
+                "opposite_track" => self.bike_backward = BIKE_TRACK,
+                "opposite" => self.bike_backward = BIKE_ALLOWED,
+                "share_busway" => self.bike_forward = BIKE_BUSWAY,
+                "lane_left" | "opposite_lane" => self.bike_backward = BIKE_LANE,
+                _ => self.bike_forward = BIKE_LANE,
+            },
 
-            "bicycle" => {
-                match val {
-                    "no" | "false" => self.bike_forward = BIKE_FORBIDDEN,
-                    _ => self.bike_forward = BIKE_ALLOWED,
-                }
-            }
-            "busway" => {
-                match val {
-                    "opposite_lane" | "opposite_track" => self.bike_backward = BIKE_BUSWAY,
-                    _ => self.bike_forward = BIKE_BUSWAY,
-                }
-            }
-            "oneway" => {
-                match val {
-                    "yes" | "true" | "1" => {
-                        self.car_backward = CAR_FORBIDDEN;
-                        if self.bike_backward == UNKNOWN {
-                            self.bike_backward = BIKE_FORBIDDEN;
-                        }
+            "bicycle" => match val {
+                "no" | "false" => self.bike_forward = BIKE_FORBIDDEN,
+                _ => self.bike_forward = BIKE_ALLOWED,
+            },
+            "busway" => match val {
+                "opposite_lane" | "opposite_track" => self.bike_backward = BIKE_BUSWAY,
+                _ => self.bike_forward = BIKE_BUSWAY,
+            },
+            "oneway" => match val {
+                "yes" | "true" | "1" => {
+                    self.car_backward = CAR_FORBIDDEN;
+                    if self.bike_backward == UNKNOWN {
+                        self.bike_backward = BIKE_FORBIDDEN;
                     }
-                    _ => {}
                 }
-            }
+                _ => {}
+            },
             "junction" => {
-                match val {
-                    "roundabout" => {
-                        self.car_backward = CAR_FORBIDDEN;
-                        if self.bike_backward == UNKNOWN {
-                            self.bike_backward = BIKE_FORBIDDEN;
-                        }
+                if val == "roundabout" {
+                    self.car_backward = CAR_FORBIDDEN;
+                    if self.bike_backward == UNKNOWN {
+                        self.bike_backward = BIKE_FORBIDDEN;
                     }
-                    _ => {}
                 }
             }
             _ => {}
@@ -195,7 +180,7 @@ impl EdgeProperties {
 
 #[test]
 fn test_accessible() {
-    let mut p = EdgeProperties::new();
+    let mut p = EdgeProperties::default();
     p.normalize();
     assert!(!p.accessible());
 
@@ -205,7 +190,7 @@ fn test_accessible() {
 
 #[test]
 fn test_normalize() {
-    let mut p = EdgeProperties::new();
+    let mut p = EdgeProperties::default();
     p.bike_forward = BIKE_LANE;
     p.normalize();
     assert_eq!(BIKE_LANE, p.bike_backward);
@@ -221,7 +206,7 @@ fn test_normalize() {
 
 #[test]
 fn test_update() {
-    let mut p = EdgeProperties::new();
+    let mut p = EdgeProperties::default();
     p.update_with_str("highway", "secondary");
     assert_eq!(CAR_SECONDARY, p.car_forward);
 

@@ -1,8 +1,8 @@
 extern crate osmpbfreader;
-use std::collections::{HashMap, HashSet};
-use models::*;
 use categorize::*;
+use models::*;
 use std;
+use std::collections::{HashMap, HashSet};
 
 // Way as represented in OpenStreetMap
 struct Way {
@@ -43,7 +43,6 @@ impl Reader {
         }
     }
 
-
     fn split_way(&self, way: &Way) -> Vec<Edge> {
         let mut result = Vec::new();
 
@@ -60,9 +59,9 @@ impl Reader {
                 if node.uses > 1 {
                     result.push(Edge {
                         id: way.id,
-                        source: source,
+                        source,
                         target: node_id,
-                        geometry: geometry,
+                        geometry,
                         properties: way.properties,
                     });
 
@@ -77,26 +76,22 @@ impl Reader {
     fn read_ways(&mut self, file: std::fs::File) {
         let mut pbf = osmpbfreader::OsmPbfReader::new(file);
         for obj in pbf.iter() {
-            match obj {
-                osmpbfreader::OsmObj::Way(way) => {
-                    let mut properties = EdgeProperties::new();
-                    for (key, val) in way.tags {
-                        properties.update(key, val);
-                    }
-                    properties.normalize();
-                    if properties.accessible() {
-                        for node in &way.nodes {
-                            self.nodes_to_keep.insert(node.clone());
-                        }
-                        self.ways.push(Way {
-                            id: way.id,
-                            nodes: way.nodes,
-                            properties: properties,
-                        });
-
-                    }
+            if let osmpbfreader::OsmObj::Way(way) = obj {
+                let mut properties = EdgeProperties::default();
+                for (key, val) in way.tags {
+                    properties.update(key, val);
                 }
-                _ => {}
+                properties.normalize();
+                if properties.accessible() {
+                    for node in &way.nodes {
+                        self.nodes_to_keep.insert(node.clone());
+                    }
+                    self.ways.push(Way {
+                        id: way.id,
+                        nodes: way.nodes,
+                        properties,
+                    });
+                }
             }
         }
     }
@@ -105,20 +100,17 @@ impl Reader {
         let mut pbf = osmpbfreader::OsmPbfReader::new(file);
         self.nodes.reserve(self.nodes_to_keep.len());
         for obj in pbf.iter() {
-            match obj {
-                osmpbfreader::OsmObj::Node(node) => {
-                    if self.nodes_to_keep.contains(&node.id) {
-                        self.nodes_to_keep.remove(&node.id);
-                        let mut n = Node::new();
-                        n.id = node.id;
-                        n.coord = Coord {
-                            lon: node.lon,
-                            lat: node.lat,
-                        };
-                        self.nodes.insert(node.id, n);
-                    }
+            if let osmpbfreader::OsmObj::Node(node) = obj {
+                if self.nodes_to_keep.contains(&node.id) {
+                    self.nodes_to_keep.remove(&node.id);
+                    let mut n = Node::default();
+                    n.id = node.id;
+                    n.coord = Coord {
+                        lon: node.lon,
+                        lat: node.lat,
+                    };
+                    self.nodes.insert(node.id, n);
                 }
-                _ => {}
             }
         }
     }
@@ -132,7 +124,10 @@ impl Reader {
     }
 
     fn edges(&self) -> Vec<Edge> {
-        self.ways.iter().flat_map(|way| self.split_way(way)).collect()
+        self.ways
+            .iter()
+            .flat_map(|way| self.split_way(way))
+            .collect()
     }
 }
 
@@ -159,17 +154,17 @@ fn test_real_all() {
 #[test]
 fn test_count_nodes() {
     let ways = vec![Way {
-                        id: 0,
-                        nodes: vec![1, 2, 3],
-                        properties: EdgeProperties::new(),
-                    }];
+        id: 0,
+        nodes: vec![1, 2, 3],
+        properties: EdgeProperties::default(),
+    }];
     let mut nodes = HashMap::new();
-    nodes.insert(1, Node::new());
-    nodes.insert(2, Node::new());
-    nodes.insert(3, Node::new());
+    nodes.insert(1, Node::default());
+    nodes.insert(2, Node::default());
+    nodes.insert(3, Node::default());
     let mut r = Reader {
-        ways: ways,
-        nodes: nodes,
+        ways,
+        nodes,
         nodes_to_keep: HashSet::new(),
     };
     r.count_nodes_uses();
@@ -183,24 +178,26 @@ fn test_count_nodes() {
 #[test]
 fn test_split() {
     let mut nodes = HashMap::new();
-    nodes.insert(1, Node::new());
-    nodes.insert(2, Node::new());
-    nodes.insert(3, Node::new());
-    nodes.insert(4, Node::new());
-    nodes.insert(5, Node::new());
-    let ways = vec![Way {
-                        id: 0,
-                        nodes: vec![1, 2, 3],
-                        properties: EdgeProperties::new(),
-                    },
-                    Way {
-                        id: 0,
-                        nodes: vec![4, 5, 2],
-                        properties: EdgeProperties::new(),
-                    }];
+    nodes.insert(1, Node::default());
+    nodes.insert(2, Node::default());
+    nodes.insert(3, Node::default());
+    nodes.insert(4, Node::default());
+    nodes.insert(5, Node::default());
+    let ways = vec![
+        Way {
+            id: 0,
+            nodes: vec![1, 2, 3],
+            properties: EdgeProperties::default(),
+        },
+        Way {
+            id: 0,
+            nodes: vec![4, 5, 2],
+            properties: EdgeProperties::default(),
+        },
+    ];
     let mut r = Reader {
-        nodes: nodes,
-        ways: ways,
+        nodes,
+        ways,
         nodes_to_keep: HashSet::new(),
     };
     r.count_nodes_uses();
