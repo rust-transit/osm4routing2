@@ -22,9 +22,9 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
     for edge in edges {
         edges_csv
             .encode((
-                edge.id,
-                edge.source,
-                edge.target,
+                edge.id.0,
+                edge.source.0,
+                edge.target.0,
                 edge.length(),
                 edge.properties.foot,
                 edge.properties.car_forward,
@@ -43,7 +43,7 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
         .expect("CSV: unable to write node header");
     for node in nodes {
         nodes_csv
-            .encode((node.id, node.coord.lon, node.coord.lat))
+            .encode((node.id.0, node.coord.lon, node.coord.lat))
             .expect("CSV: unable to write node");
     }
 }
