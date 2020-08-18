@@ -10,7 +10,7 @@ license = "MIT"
 [dependencies]
 osmpbfreader = "0.14.0"
 csv = "0.14.7"
-docopt = "0.6.86"
+docopt = "1.1.0"
 
 [lib]
 name = "osm4routing"
