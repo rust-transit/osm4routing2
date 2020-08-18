@@ -4,9 +4,9 @@ use std;
 
 pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
     let edges_path = std::path::Path::new("edges.csv");
-    let mut edges_csv = csv::Writer::from_file(edges_path).unwrap();
+    let mut edges_csv = csv::Writer::from_path(edges_path).unwrap();
     edges_csv
-        .encode(vec![
+        .serialize(vec![
             "id",
             "source",
             "target",
@@ -21,7 +21,7 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
         .expect("CSV: unable to write edge header");
     for edge in edges {
         edges_csv
-            .encode((
+            .serialize((
                 edge.id.0,
                 edge.source.0,
                 edge.target.0,
@@ -37,13 +37,13 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
     }
 
     let nodes_path = std::path::Path::new("nodes.csv");
-    let mut nodes_csv = csv::Writer::from_file(nodes_path).unwrap();
+    let mut nodes_csv = csv::Writer::from_path(nodes_path).unwrap();
     nodes_csv
-        .encode(vec!["id", "lon", "lat"])
+        .serialize(vec!["id", "lon", "lat"])
         .expect("CSV: unable to write node header");
     for node in nodes {
         nodes_csv
-            .encode((node.id.0, node.coord.lon, node.coord.lat))
+            .serialize((node.id.0, node.coord.lon, node.coord.lat))
             .expect("CSV: unable to write node");
     }
 }
