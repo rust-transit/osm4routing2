@@ -1,4 +1,4 @@
-extern crate osmpbfreader;
+use osmpbfreader::objects::{NodeId, WayId};
 use categorize::*;
 use models::*;
 use std;
@@ -6,15 +6,15 @@ use std::collections::{HashMap, HashSet};
 
 // Way as represented in OpenStreetMap
 struct Way {
-    id: i64,
-    nodes: Vec<i64>,
+    id: WayId,
+    nodes: Vec<NodeId>,
     properties: EdgeProperties,
 }
 
 struct Reader {
-    nodes: HashMap<i64, Node>,
+    nodes: HashMap<NodeId, Node>,
     ways: Vec<Way>,
-    nodes_to_keep: HashSet<i64>,
+    nodes_to_keep: HashSet<NodeId>,
 }
 
 impl Reader {
@@ -37,7 +37,7 @@ impl Reader {
                         node.uses += 1;
                     }
                 } else {
-                    panic!("Missing node, id: {}", node_id)
+                    panic!("Missing node, id: {:?}", node_id)
                 }
             }
         }
@@ -46,7 +46,7 @@ impl Reader {
     fn split_way(&self, way: &Way) -> Vec<Edge> {
         let mut result = Vec::new();
 
-        let mut source = 0;
+        let mut source = NodeId(0);
         let mut geometry = Vec::new();
         for (i, &node_id) in way.nodes.iter().enumerate() {
             let node = self.nodes[&node_id];
@@ -76,10 +76,10 @@ impl Reader {
     fn read_ways(&mut self, file: std::fs::File) {
         let mut pbf = osmpbfreader::OsmPbfReader::new(file);
         for obj in pbf.iter() {
-            if let osmpbfreader::OsmObj::Way(way) = obj {
+            if let Ok(osmpbfreader::OsmObj::Way(way)) = obj {
                 let mut properties = EdgeProperties::default();
-                for (key, val) in way.tags {
-                    properties.update(key, val);
+                for (key, val) in way.tags.iter() {
+                    properties.update(key.to_string(), val.to_string());
                 }
                 properties.normalize();
                 if properties.accessible() {
@@ -100,14 +100,14 @@ impl Reader {
         let mut pbf = osmpbfreader::OsmPbfReader::new(file);
         self.nodes.reserve(self.nodes_to_keep.len());
         for obj in pbf.iter() {
-            if let osmpbfreader::OsmObj::Node(node) = obj {
+            if let Ok(osmpbfreader::OsmObj::Node(node)) = obj {
                 if self.nodes_to_keep.contains(&node.id) {
                     self.nodes_to_keep.remove(&node.id);
                     let mut n = Node::default();
                     n.id = node.id;
                     n.coord = Coord {
-                        lon: node.lon,
-                        lat: node.lat,
+                        lon: node.lon(),
+                        lat: node.lat(),
                     };
                     self.nodes.insert(node.id, n);
                 }
@@ -154,23 +154,23 @@ fn test_real_all() {
 #[test]
 fn test_count_nodes() {
     let ways = vec![Way {
-        id: 0,
-        nodes: vec![1, 2, 3],
+        id: WayId(0),
+        nodes: vec![NodeId(1), NodeId(2), NodeId(3)],
         properties: EdgeProperties::default(),
     }];
     let mut nodes = HashMap::new();
-    nodes.insert(1, Node::default());
-    nodes.insert(2, Node::default());
-    nodes.insert(3, Node::default());
+    nodes.insert(NodeId(1), Node::default());
+    nodes.insert(NodeId(2), Node::default());
+    nodes.insert(NodeId(3), Node::default());
     let mut r = Reader {
         ways,
         nodes,
         nodes_to_keep: HashSet::new(),
     };
     r.count_nodes_uses();
-    assert_eq!(2, r.nodes[&1].uses);
-    assert_eq!(1, r.nodes[&2].uses);
-    assert_eq!(2, r.nodes[&3].uses);
+    assert_eq!(2, r.nodes[&NodeId(1)].uses);
+    assert_eq!(1, r.nodes[&NodeId(2)].uses);
+    assert_eq!(2, r.nodes[&NodeId(3)].uses);
 
     assert_eq!(2, r.nodes().len());
 }
@@ -178,20 +178,20 @@ fn test_count_nodes() {
 #[test]
 fn test_split() {
     let mut nodes = HashMap::new();
-    nodes.insert(1, Node::default());
-    nodes.insert(2, Node::default());
-    nodes.insert(3, Node::default());
-    nodes.insert(4, Node::default());
-    nodes.insert(5, Node::default());
+    nodes.insert(NodeId(1), Node::default());
+    nodes.insert(NodeId(2), Node::default());
+    nodes.insert(NodeId(3), Node::default());
+    nodes.insert(NodeId(4), Node::default());
+    nodes.insert(NodeId(5), Node::default());
     let ways = vec![
         Way {
-            id: 0,
-            nodes: vec![1, 2, 3],
+            id: WayId(0),
+            nodes: vec![NodeId(1), NodeId(2), NodeId(3)],
             properties: EdgeProperties::default(),
         },
         Way {
-            id: 0,
-            nodes: vec![4, 5, 2],
+            id: WayId(0),
+            nodes: vec![NodeId(4), NodeId(5), NodeId(2)],
             properties: EdgeProperties::default(),
         },
     ];
