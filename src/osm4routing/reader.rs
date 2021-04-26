@@ -1,6 +1,6 @@
-use osmpbfreader::objects::{NodeId, WayId};
 use categorize::*;
 use models::*;
+use osmpbfreader::objects::{NodeId, WayId};
 use std;
 use std::collections::{HashMap, HashSet};
 
@@ -84,7 +84,7 @@ impl Reader {
                 properties.normalize();
                 if properties.accessible() {
                     for node in &way.nodes {
-                        self.nodes_to_keep.insert(node.clone());
+                        self.nodes_to_keep.insert(*node);
                     }
                     self.ways.push(Way {
                         id: way.id,
@@ -103,13 +103,17 @@ impl Reader {
             if let Ok(osmpbfreader::OsmObj::Node(node)) = obj {
                 if self.nodes_to_keep.contains(&node.id) {
                     self.nodes_to_keep.remove(&node.id);
-                    let mut n = Node::default();
-                    n.id = node.id;
-                    n.coord = Coord {
-                        lon: node.lon(),
-                        lat: node.lat(),
-                    };
-                    self.nodes.insert(node.id, n);
+                    self.nodes.insert(
+                        node.id,
+                        Node {
+                            id: node.id,
+                            coord: Coord {
+                                lon: node.lon(),
+                                lat: node.lat(),
+                            },
+                            uses: 0,
+                        },
+                    );
                 }
             }
         }
