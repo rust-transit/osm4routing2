@@ -1,7 +1,6 @@
-use categorize::*;
-use models::*;
+use crate::categorize::*;
+use crate::models::*;
 use osmpbfreader::objects::{NodeId, WayId};
-use std;
 use std::collections::{HashMap, HashSet};
 
 // Way as represented in OpenStreetMap

@@ -1,5 +1,6 @@
 [package]
 name = "osm4routing"
+edition = "2021"
 version = "0.3.0"
 authors = ["Tristram Gräbener <tristramg@gmail.com>"]
 description = "Convert OpenStreetMap data into routing friendly CSV"

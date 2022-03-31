@@ -1,11 +1,7 @@
-extern crate docopt;
-extern crate osm4routing;
-use docopt::Docopt;
-
 fn main() {
     const USAGE: &str = "
 Usage: osm4routing <source.osm.pbf>";
-    let args = Docopt::new(USAGE)
+    let args = docopt::Docopt::new(USAGE)
         .unwrap()
         .parse()
         .unwrap_or_else(|e| e.exit());

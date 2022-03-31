@@ -1,6 +1,4 @@
-extern crate csv;
-use models::*;
-use std;
+use crate::models::*;
 
 pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
     let edges_path = std::path::Path::new("edges.csv");

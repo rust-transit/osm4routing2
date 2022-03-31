@@ -1,5 +1,5 @@
+use crate::categorize::EdgeProperties;
 use osmpbfreader::objects::{NodeId, WayId};
-use categorize::EdgeProperties;
 
 // Coord are coordinates in decimal degress WGS84
 #[derive(Copy, Clone, Default)]
