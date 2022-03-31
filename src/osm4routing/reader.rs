@@ -75,8 +75,8 @@ impl Reader {
 
     fn read_ways(&mut self, file: std::fs::File) {
         let mut pbf = osmpbfreader::OsmPbfReader::new(file);
-        for obj in pbf.iter() {
-            if let Ok(osmpbfreader::OsmObj::Way(way)) = obj {
+        for obj in pbf.iter().flatten() {
+            if let osmpbfreader::OsmObj::Way(way) = obj {
                 let mut properties = EdgeProperties::default();
                 for (key, val) in way.tags.iter() {
                     properties.update(key.to_string(), val.to_string());
@@ -99,8 +99,8 @@ impl Reader {
     fn read_nodes(&mut self, file: std::fs::File) {
         let mut pbf = osmpbfreader::OsmPbfReader::new(file);
         self.nodes.reserve(self.nodes_to_keep.len());
-        for obj in pbf.iter() {
-            if let Ok(osmpbfreader::OsmObj::Node(node)) = obj {
+        for obj in pbf.iter().flatten() {
+            if let osmpbfreader::OsmObj::Node(node) = obj {
                 if self.nodes_to_keep.contains(&node.id) {
                     self.nodes_to_keep.remove(&node.id);
                     self.nodes.insert(
