@@ -8,7 +8,7 @@ readme = "readme.md"
 license = "MIT"
 
 [dependencies]
-osmpbfreader = "0.14.0"
+osmpbfreader = "0.15.2"
 csv = "1.1.3"
 docopt = "1.1.0"
 
