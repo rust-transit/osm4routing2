@@ -33,7 +33,7 @@ const BIKE_BUSWAY: i8 = 4;
 const BIKE_TRACK: i8 = 5;
 
 // Edgeself contains what mode can use the edge in each direction
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 pub struct EdgeProperties {
     pub foot: i8,
     pub car_forward: i8,
@@ -42,8 +42,8 @@ pub struct EdgeProperties {
     pub bike_backward: i8,
 }
 
-impl EdgeProperties {
-    pub fn default() -> EdgeProperties {
+impl Default for EdgeProperties {
+    fn default() -> EdgeProperties {
         EdgeProperties {
             foot: UNKNOWN,
             car_forward: UNKNOWN,
@@ -52,7 +52,9 @@ impl EdgeProperties {
             bike_backward: UNKNOWN,
         }
     }
+}
 
+impl EdgeProperties {
     // Normalize fills UNKNOWN fields
     pub fn normalize(&mut self) {
         if self.car_backward == UNKNOWN {
