@@ -32,6 +32,11 @@ const BIKE_BUSWAY: i8 = 4;
 // BIKE_TRACK is a physically separated for any other traffic
 const BIKE_TRACK: i8 = 5;
 
+// TRAIN_FORBIDEN no train is allowed
+const TRAIN_FORBIDDEN: i8 = 0;
+// TRAIN_ALLOWED means there are rails
+const TRAIN_ALLOWED: i8 = 1;
+
 // Edgeself contains what mode can use the edge in each direction
 #[derive(Clone, Copy)]
 pub struct EdgeProperties {
@@ -40,6 +45,7 @@ pub struct EdgeProperties {
     pub car_backward: i8,
     pub bike_forward: i8,
     pub bike_backward: i8,
+    pub train: i8,
 }
 
 impl Default for EdgeProperties {
@@ -50,6 +56,7 @@ impl Default for EdgeProperties {
             car_backward: UNKNOWN,
             bike_forward: UNKNOWN,
             bike_backward: UNKNOWN,
+            train: UNKNOWN,
         }
     }
 }
@@ -78,6 +85,9 @@ impl EdgeProperties {
         if self.foot == UNKNOWN {
             self.foot = FOOT_FORBIDDEN;
         }
+        if self.train == UNKNOWN {
+            self.train = TRAIN_FORBIDDEN;
+        }
     }
 
     // Accessible means that at least one mean of transportation can use it in one direction
@@ -87,6 +97,7 @@ impl EdgeProperties {
             || self.car_forward != CAR_FORBIDDEN
             || self.car_backward != CAR_FORBIDDEN
             || self.foot != FOOT_FORBIDDEN
+            || self.train != TRAIN_FORBIDDEN
     }
 
     pub fn update(&mut self, key_string: String, val_string: String) {
@@ -174,6 +185,9 @@ impl EdgeProperties {
                         self.bike_backward = BIKE_FORBIDDEN;
                     }
                 }
+            }
+            "railway" => {
+                self.train = TRAIN_ALLOWED;
             }
             _ => {}
         }

@@ -14,6 +14,7 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
             "car_backward",
             "bike_forward",
             "bike_backward",
+            "train",
             "wkt",
         ])
         .expect("CSV: unable to write edge header");
@@ -29,6 +30,7 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
                 edge.properties.car_backward,
                 edge.properties.bike_forward,
                 edge.properties.bike_backward,
+                edge.properties.train,
                 edge.as_wkt(),
             ))
             .expect("CSV: unable to write edge");
