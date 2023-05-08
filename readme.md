@@ -22,3 +22,14 @@ The identifiers for nodes and edges are from OpenStreetMap. That means that edge
 If you prefer having the files in database, you can run the very basic `import_postgres.sh` script.
 
 It supposes that a database `osm4routing` exists (otherwise modify it to your needs).
+
+## Using as a library
+
+In order to use osm4routing as a library, add `osm4routing = "*"` in your `Cargo.toml` file in the `[dependencies]` section.
+
+Use it:
+
+```
+let (nodes, edges) = osm4routing::read('some_data.osm.pbf')?;
+
+```
