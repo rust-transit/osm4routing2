@@ -6,6 +6,7 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
     edges_csv
         .serialize(vec![
             "id",
+            "osm_id",
             "source",
             "target",
             "length",
@@ -21,7 +22,8 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
     for edge in edges {
         edges_csv
             .serialize((
-                edge.id.0,
+                &edge.id,
+                edge.osm_id.0,
                 edge.source.0,
                 edge.target.0,
                 edge.length(),

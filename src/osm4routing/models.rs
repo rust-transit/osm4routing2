@@ -28,7 +28,8 @@ impl Default for Node {
 
 // Edge is a topological representation with only two extremities and no geometry
 pub struct Edge {
-    pub id: WayId,
+    pub id: String,
+    pub osm_id: WayId,
     pub source: NodeId,
     pub target: NodeId,
     pub geometry: Vec<Coord>,
@@ -74,7 +75,8 @@ pub fn distance(start: Coord, end: Coord) -> f64 {
 #[test]
 fn test_as_wkt() {
     let edge = Edge {
-        id: WayId(0),
+        id: "0".to_string(),
+        osm_id: WayId(0),
         source: NodeId(0),
         target: NodeId(0),
         geometry: vec![

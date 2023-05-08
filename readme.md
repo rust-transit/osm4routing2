@@ -15,7 +15,9 @@ If you prefer running the application from the sources, and not installing it, y
 
 `cargo run --release -- <path_to_your_osmfile.pbf>`
 
-The identifiers for nodes and edges are from OpenStreetMap. That means that edges id can be duplicated.
+The identifiers for nodes and edges are from OpenStreetMap.
+
+The `id` property of an edge is unique, while the `osm_id` can be duplicated.
 
 ## Importing in a database
 
