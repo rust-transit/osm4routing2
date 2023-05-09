@@ -6,6 +6,7 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
     edges_csv
         .serialize(vec![
             "id",
+            "osm_id",
             "source",
             "target",
             "length",
@@ -14,13 +15,15 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
             "car_backward",
             "bike_forward",
             "bike_backward",
+            "train",
             "wkt",
         ])
         .expect("CSV: unable to write edge header");
     for edge in edges {
         edges_csv
             .serialize((
-                edge.id.0,
+                &edge.id,
+                edge.osm_id.0,
                 edge.source.0,
                 edge.target.0,
                 edge.length(),
@@ -29,6 +32,7 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
                 edge.properties.car_backward,
                 edge.properties.bike_forward,
                 edge.properties.bike_backward,
+                edge.properties.train,
                 edge.as_wkt(),
             ))
             .expect("CSV: unable to write edge");

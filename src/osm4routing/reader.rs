@@ -57,7 +57,8 @@ impl Reader {
 
                 if node.uses > 1 {
                     result.push(Edge {
-                        id: way.id,
+                        id: format!("{}-{}", way.id.0, result.len()),
+                        osm_id: way.id,
                         source,
                         target: node_id,
                         geometry,
