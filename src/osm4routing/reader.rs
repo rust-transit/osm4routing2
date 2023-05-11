@@ -1,5 +1,5 @@
-use crate::categorize::*;
-use crate::models::*;
+use super::categorize::*;
+use super::models::*;
 use osmpbfreader::objects::{NodeId, WayId};
 use std::collections::{HashMap, HashSet};
 
@@ -10,19 +10,35 @@ struct Way {
     properties: EdgeProperties,
 }
 
-struct Reader {
+pub struct Reader {
     nodes: HashMap<NodeId, Node>,
     ways: Vec<Way>,
     nodes_to_keep: HashSet<NodeId>,
+    forbidden: HashMap<String, HashSet<String>>,
+}
+
+impl Default for Reader {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Reader {
-    fn new() -> Reader {
+    pub fn new() -> Reader {
         Reader {
             nodes: HashMap::new(),
             ways: Vec::new(),
             nodes_to_keep: HashSet::new(),
+            forbidden: HashMap::new(),
         }
+    }
+
+    pub fn reject(mut self, key: &str, value: &str) -> Self {
+        self.forbidden
+            .entry(key.to_string())
+            .or_default()
+            .insert(value.to_string());
+        self
     }
 
     fn count_nodes_uses(&mut self) {
@@ -77,12 +93,21 @@ impl Reader {
         let mut pbf = osmpbfreader::OsmPbfReader::new(file);
         for obj in pbf.iter().flatten() {
             if let osmpbfreader::OsmObj::Way(way) = obj {
+                let mut skip = false;
                 let mut properties = EdgeProperties::default();
                 for (key, val) in way.tags.iter() {
                     properties.update(key.to_string(), val.to_string());
+                    if self
+                        .forbidden
+                        .get(key.as_str())
+                        .map(|vals| vals.contains(val.as_str()))
+                        == Some(true)
+                    {
+                        skip = true;
+                    }
                 }
                 properties.normalize();
-                if properties.accessible() {
+                if properties.accessible() && !skip {
                     for node in &way.nodes {
                         self.nodes_to_keep.insert(*node);
                     }
@@ -132,19 +157,22 @@ impl Reader {
             .flat_map(|way| self.split_way(way))
             .collect()
     }
+
+    pub fn read(mut self, filename: &str) -> Result<(Vec<Node>, Vec<Edge>), String> {
+        let path = std::path::Path::new(filename);
+        let file = std::fs::File::open(path).map_err(|e| e.to_string())?;
+        self.read_ways(file);
+        let file_nodes = std::fs::File::open(path).map_err(|e| e.to_string())?;
+        self.read_nodes(file_nodes);
+        self.count_nodes_uses();
+        let edges = self.edges();
+        Ok((self.nodes(), edges))
+    }
 }
 
 // Read all the nodes and ways of the osm.pbf file
 pub fn read(filename: &str) -> Result<(Vec<Node>, Vec<Edge>), String> {
-    let mut r = Reader::new();
-    let path = std::path::Path::new(filename);
-    let file = std::fs::File::open(path).map_err(|e| e.to_string())?;
-    r.read_ways(file);
-    let file_nodes = std::fs::File::open(path).map_err(|e| e.to_string())?;
-    r.read_nodes(file_nodes);
-    r.count_nodes_uses();
-    let edges = r.edges();
-    Ok((r.nodes(), edges))
+    Reader::new().read(filename)
 }
 
 #[test]
@@ -169,6 +197,7 @@ fn test_count_nodes() {
         ways,
         nodes,
         nodes_to_keep: HashSet::new(),
+        forbidden: HashMap::new(),
     };
     r.count_nodes_uses();
     assert_eq!(2, r.nodes[&NodeId(1)].uses);
@@ -202,6 +231,7 @@ fn test_split() {
         nodes,
         ways,
         nodes_to_keep: HashSet::new(),
+        forbidden: HashMap::new(),
     };
     r.count_nodes_uses();
     let edges = r.edges();
@@ -212,4 +242,13 @@ fn test_split() {
 fn test_wrong_file() {
     let r = read("i hope you have no file name like this one");
     assert!(r.is_err());
+}
+
+#[test]
+fn forbidden_values() {
+    let (_, ways) = Reader::new()
+        .reject("highway", "secondary")
+        .read("src/osm4routing/test_data/minimal.osm.pbf")
+        .unwrap();
+    assert_eq!(0, ways.len());
 }

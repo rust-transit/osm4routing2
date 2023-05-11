@@ -32,6 +32,13 @@ In order to use osm4routing as a library, add `osm4routing = "*"` in your `Cargo
 Use it:
 
 ```
-let (nodes, edges) = osm4routing::read('some_data.osm.pbf')?;
+let (nodes, edges) = osm4routing::read("some_data.osm.pbf")?;
+
+```
+
+If you wand to reject certain edges based on their tag, use the the `Reader`:
+
+```
+let (nodes, edges) = osm4routing::Reader::new().reject("area", "yes").read("some_data.osm.pbf")?;
 
 ```
