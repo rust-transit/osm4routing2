@@ -1,4 +1,4 @@
-use crate::models::*;
+use super::models::*;
 
 pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
     let edges_path = std::path::Path::new("edges.csv");

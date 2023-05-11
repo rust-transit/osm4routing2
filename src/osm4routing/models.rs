@@ -1,4 +1,4 @@
-use crate::categorize::EdgeProperties;
+use super::categorize::EdgeProperties;
 use osmpbfreader::objects::{NodeId, WayId};
 
 // Coord are coordinates in decimal degress WGS84
@@ -57,7 +57,7 @@ impl Edge {
     }
 }
 
-pub fn distance(start: Coord, end: Coord) -> f64 {
+fn distance(start: Coord, end: Coord) -> f64 {
     let r: f64 = 6_378_100.0;
 
     let d_lon: f64 = (end.lon - start.lon).to_radians();
