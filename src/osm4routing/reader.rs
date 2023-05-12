@@ -100,7 +100,7 @@ impl Reader {
                     if self
                         .forbidden
                         .get(key.as_str())
-                        .map(|vals| vals.contains(val.as_str()))
+                        .map(|vals| vals.contains(val.as_str()) || vals.contains("*"))
                         == Some(true)
                     {
                         skip = true;
@@ -248,6 +248,15 @@ fn test_wrong_file() {
 fn forbidden_values() {
     let (_, ways) = Reader::new()
         .reject("highway", "secondary")
+        .read("src/osm4routing/test_data/minimal.osm.pbf")
+        .unwrap();
+    assert_eq!(0, ways.len());
+}
+
+#[test]
+fn forbidden_wildcard() {
+    let (_, ways) = Reader::new()
+        .reject("highway", "*")
         .read("src/osm4routing/test_data/minimal.osm.pbf")
         .unwrap();
     assert_eq!(0, ways.len());
