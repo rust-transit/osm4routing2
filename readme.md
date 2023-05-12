@@ -36,7 +36,7 @@ let (nodes, edges) = osm4routing::read("some_data.osm.pbf")?;
 
 ```
 
-If you wand to reject certain edges based on their tag, use the the `Reader`:
+If you wand to reject certain edges based on their tag, use the `Reader` (it also accepts "*" to reject every value):
 
 ```
 let (nodes, edges) = osm4routing::Reader::new().reject("area", "yes").read("some_data.osm.pbf")?;
