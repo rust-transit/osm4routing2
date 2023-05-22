@@ -134,10 +134,11 @@ impl Reader {
         }
     }
 
-    fn nodes(self) -> Vec<Node> {
+    fn nodes(&self) -> Vec<Node> {
         self.nodes
-            .into_values()
+            .values()
             .filter(|node| node.uses > 1)
+            .copied()
             .collect()
     }
 
@@ -148,15 +149,18 @@ impl Reader {
             .collect()
     }
 
-    pub fn read(mut self, filename: &str) -> Result<(Vec<Node>, Vec<Edge>), String> {
+    pub fn read(&mut self, filename: &str) -> Result<(Vec<Node>, Vec<Edge>), String> {
         let path = std::path::Path::new(filename);
         let file = std::fs::File::open(path).map_err(|e| e.to_string())?;
         self.read_ways(file);
         let file_nodes = std::fs::File::open(path).map_err(|e| e.to_string())?;
         self.read_nodes(file_nodes);
         self.count_nodes_uses();
-        let edges = self.edges();
-        Ok((self.nodes(), edges))
+        Ok((self.nodes(), self.edges()))
+    }
+
+    pub fn way_of_node(&self, id: &NodeId) -> Option<&Vec<WayId>> {
+        self.ways_of_node.get(id)
     }
 }
 
