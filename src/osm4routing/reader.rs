@@ -53,27 +53,27 @@ impl Reader {
 
         let mut source = NodeId(0);
         let mut geometry = Vec::new();
+        let mut nodes = Vec::new();
         for (i, &node_id) in way.nodes.iter().enumerate() {
             let node = self.nodes[&node_id];
+            geometry.push(node.coord);
+            nodes.push(node.id);
             if i == 0 {
                 source = node_id;
-                geometry.push(node.coord);
-            } else {
-                geometry.push(node.coord);
+            } else if node.uses > 1 {
+                result.push(Edge {
+                    id: format!("{}-{}", way.id.0, result.len()),
+                    osm_id: way.id,
+                    source,
+                    target: node_id,
+                    geometry,
+                    properties: way.properties,
+                    nodes,
+                });
 
-                if node.uses > 1 {
-                    result.push(Edge {
-                        id: format!("{}-{}", way.id.0, result.len()),
-                        osm_id: way.id,
-                        source,
-                        target: node_id,
-                        geometry,
-                        properties: way.properties,
-                    });
-
-                    source = node_id;
-                    geometry = vec![node.coord];
-                }
+                source = node_id;
+                geometry = vec![node.coord];
+                nodes = vec![node.id]
             }
         }
         result
@@ -157,10 +157,6 @@ impl Reader {
         self.read_nodes(file_nodes);
         self.count_nodes_uses();
         Ok((self.nodes(), self.edges()))
-    }
-
-    pub fn way_of_node(&self, id: &NodeId) -> Option<&Vec<WayId>> {
-        self.ways_of_node.get(id)
     }
 }
 
@@ -252,4 +248,12 @@ fn forbidden_wildcard() {
         .read("src/osm4routing/test_data/minimal.osm.pbf")
         .unwrap();
     assert_eq!(0, ways.len());
+}
+
+#[test]
+fn way_of_node() {
+    let mut r = Reader::new();
+    let (_nodes, edges) = r.read("src/osm4routing/test_data/minimal.osm.pbf").unwrap();
+
+    assert_eq!(2, edges[0].nodes.len());
 }

@@ -34,6 +34,7 @@ pub struct Edge {
     pub target: NodeId,
     pub geometry: Vec<Coord>,
     pub properties: EdgeProperties,
+    pub nodes: Vec<NodeId>,
 }
 
 impl Edge {
@@ -85,6 +86,7 @@ fn test_as_wkt() {
             Coord { lon: 0., lat: 1. },
         ],
         properties: EdgeProperties::default(),
+        nodes: vec![],
     };
     assert!(
         "LINESTRING(0.0000000 0.0000000, 1.0000000 0.0000000, 0.0000000 1.0000000)"
