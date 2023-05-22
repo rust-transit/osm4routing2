@@ -10,6 +10,7 @@ struct Way {
     properties: EdgeProperties,
 }
 
+#[derive(Default)]
 pub struct Reader {
     nodes: HashMap<NodeId, Node>,
     ways: Vec<Way>,
@@ -17,20 +18,9 @@ pub struct Reader {
     forbidden: HashMap<String, HashSet<String>>,
 }
 
-impl Default for Reader {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Reader {
     pub fn new() -> Reader {
-        Reader {
-            nodes: HashMap::new(),
-            ways: Vec::new(),
-            nodes_to_keep: HashSet::new(),
-            forbidden: HashMap::new(),
-        }
+        Reader::default()
     }
 
     pub fn reject(mut self, key: &str, value: &str) -> Self {
@@ -196,8 +186,7 @@ fn test_count_nodes() {
     let mut r = Reader {
         ways,
         nodes,
-        nodes_to_keep: HashSet::new(),
-        forbidden: HashMap::new(),
+        ..Default::default()
     };
     r.count_nodes_uses();
     assert_eq!(2, r.nodes[&NodeId(1)].uses);
@@ -230,8 +219,7 @@ fn test_split() {
     let mut r = Reader {
         nodes,
         ways,
-        nodes_to_keep: HashSet::new(),
-        forbidden: HashMap::new(),
+        ..Default::default()
     };
     r.count_nodes_uses();
     let edges = r.edges();
