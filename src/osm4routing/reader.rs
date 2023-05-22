@@ -34,15 +34,15 @@ impl Reader {
     fn count_nodes_uses(&mut self) {
         for way in &self.ways {
             for (i, node_id) in way.nodes.iter().enumerate() {
-                if let Some(node) = self.nodes.get_mut(node_id) {
-                    // Count double extremities nodes
-                    if i == 0 || i == way.nodes.len() - 1 {
-                        node.uses += 2;
-                    } else {
-                        node.uses += 1;
-                    }
+                let node = self
+                    .nodes
+                    .get_mut(node_id)
+                    .expect("Missing node, id: {node_id}");
+                // Count double extremities nodes
+                if i == 0 || i == way.nodes.len() - 1 {
+                    node.uses += 2;
                 } else {
-                    panic!("Missing node, id: {:?}", node_id)
+                    node.uses += 1;
                 }
             }
         }
