@@ -34,6 +34,7 @@ pub struct Edge {
     pub target: NodeId,
     pub geometry: Vec<Coord>,
     pub properties: EdgeProperties,
+    pub nodes: Vec<NodeId>,
 }
 
 impl Edge {
@@ -54,6 +55,18 @@ impl Edge {
             .windows(2)
             .map(|coords| distance(coords[0], coords[1]))
             .sum()
+    }
+
+    // Length in meter until the given node
+    pub fn length_until(&self, node: &NodeId) -> f64 {
+        let mut length = 0.;
+        for i in 1..(self.nodes.len()) {
+            length += distance(self.geometry[i - 1], self.geometry[i]);
+            if &self.nodes[i] == node {
+                return length;
+            }
+        }
+        0.
     }
 }
 
@@ -85,6 +98,7 @@ fn test_as_wkt() {
             Coord { lon: 0., lat: 1. },
         ],
         properties: EdgeProperties::default(),
+        nodes: vec![],
     };
     assert!(
         "LINESTRING(0.0000000 0.0000000, 1.0000000 0.0000000, 0.0000000 1.0000000)"
@@ -98,4 +112,25 @@ fn test_distance() {
     let b = Coord { lon: 1., lat: 0. };
 
     assert!((1. - (distance(a, b) / (1853. * 60.))).abs() < 0.01);
+}
+
+#[test]
+fn test_length_until() {
+    let e = Edge {
+        id: "".to_string(),
+        osm_id: WayId(0),
+        properties: EdgeProperties::default(),
+        source: NodeId(0),
+        target: NodeId(2),
+        nodes: vec![NodeId(0), NodeId(1), NodeId(2)],
+        geometry: vec![
+            Coord { lon: 0., lat: 0. },
+            Coord { lon: 1., lat: 0. },
+            Coord { lon: 1., lat: 1. },
+        ],
+    };
+
+    assert!((1. - e.length_until(&NodeId(1)) / (1853. * 60.)).abs() < 0.01);
+    assert_eq!(e.length_until(&NodeId(0)), 0.);
+    assert!((1. - e.length_until(&NodeId(2)) / (2. * 1853. * 60.)).abs() < 0.01);
 }

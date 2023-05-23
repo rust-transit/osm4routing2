@@ -10,6 +10,7 @@ struct Way {
     properties: EdgeProperties,
 }
 
+#[derive(Default)]
 pub struct Reader {
     nodes: HashMap<NodeId, Node>,
     ways: Vec<Way>,
@@ -17,20 +18,9 @@ pub struct Reader {
     forbidden: HashMap<String, HashSet<String>>,
 }
 
-impl Default for Reader {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Reader {
     pub fn new() -> Reader {
-        Reader {
-            nodes: HashMap::new(),
-            ways: Vec::new(),
-            nodes_to_keep: HashSet::new(),
-            forbidden: HashMap::new(),
-        }
+        Reader::default()
     }
 
     pub fn reject(mut self, key: &str, value: &str) -> Self {
@@ -44,15 +34,15 @@ impl Reader {
     fn count_nodes_uses(&mut self) {
         for way in &self.ways {
             for (i, node_id) in way.nodes.iter().enumerate() {
-                if let Some(node) = self.nodes.get_mut(node_id) {
-                    // Count double extremities nodes
-                    if i == 0 || i == way.nodes.len() - 1 {
-                        node.uses += 2;
-                    } else {
-                        node.uses += 1;
-                    }
+                let node = self
+                    .nodes
+                    .get_mut(node_id)
+                    .expect("Missing node, id: {node_id}");
+                // Count double extremities nodes
+                if i == 0 || i == way.nodes.len() - 1 {
+                    node.uses += 2;
                 } else {
-                    panic!("Missing node, id: {:?}", node_id)
+                    node.uses += 1;
                 }
             }
         }
@@ -63,27 +53,27 @@ impl Reader {
 
         let mut source = NodeId(0);
         let mut geometry = Vec::new();
+        let mut nodes = Vec::new();
         for (i, &node_id) in way.nodes.iter().enumerate() {
             let node = self.nodes[&node_id];
+            geometry.push(node.coord);
+            nodes.push(node.id);
             if i == 0 {
                 source = node_id;
-                geometry.push(node.coord);
-            } else {
-                geometry.push(node.coord);
+            } else if node.uses > 1 {
+                result.push(Edge {
+                    id: format!("{}-{}", way.id.0, result.len()),
+                    osm_id: way.id,
+                    source,
+                    target: node_id,
+                    geometry,
+                    properties: way.properties,
+                    nodes,
+                });
 
-                if node.uses > 1 {
-                    result.push(Edge {
-                        id: format!("{}-{}", way.id.0, result.len()),
-                        osm_id: way.id,
-                        source,
-                        target: node_id,
-                        geometry,
-                        properties: way.properties,
-                    });
-
-                    source = node_id;
-                    geometry = vec![node.coord];
-                }
+                source = node_id;
+                geometry = vec![node.coord];
+                nodes = vec![node.id]
             }
         }
         result
@@ -144,10 +134,11 @@ impl Reader {
         }
     }
 
-    fn nodes(self) -> Vec<Node> {
+    fn nodes(&self) -> Vec<Node> {
         self.nodes
-            .into_values()
+            .values()
             .filter(|node| node.uses > 1)
+            .copied()
             .collect()
     }
 
@@ -158,15 +149,14 @@ impl Reader {
             .collect()
     }
 
-    pub fn read(mut self, filename: &str) -> Result<(Vec<Node>, Vec<Edge>), String> {
+    pub fn read(&mut self, filename: &str) -> Result<(Vec<Node>, Vec<Edge>), String> {
         let path = std::path::Path::new(filename);
         let file = std::fs::File::open(path).map_err(|e| e.to_string())?;
         self.read_ways(file);
         let file_nodes = std::fs::File::open(path).map_err(|e| e.to_string())?;
         self.read_nodes(file_nodes);
         self.count_nodes_uses();
-        let edges = self.edges();
-        Ok((self.nodes(), edges))
+        Ok((self.nodes(), self.edges()))
     }
 }
 
@@ -196,8 +186,7 @@ fn test_count_nodes() {
     let mut r = Reader {
         ways,
         nodes,
-        nodes_to_keep: HashSet::new(),
-        forbidden: HashMap::new(),
+        ..Default::default()
     };
     r.count_nodes_uses();
     assert_eq!(2, r.nodes[&NodeId(1)].uses);
@@ -230,8 +219,7 @@ fn test_split() {
     let mut r = Reader {
         nodes,
         ways,
-        nodes_to_keep: HashSet::new(),
-        forbidden: HashMap::new(),
+        ..Default::default()
     };
     r.count_nodes_uses();
     let edges = r.edges();
@@ -260,4 +248,12 @@ fn forbidden_wildcard() {
         .read("src/osm4routing/test_data/minimal.osm.pbf")
         .unwrap();
     assert_eq!(0, ways.len());
+}
+
+#[test]
+fn way_of_node() {
+    let mut r = Reader::new();
+    let (_nodes, edges) = r.read("src/osm4routing/test_data/minimal.osm.pbf").unwrap();
+
+    assert_eq!(2, edges[0].nodes.len());
 }
