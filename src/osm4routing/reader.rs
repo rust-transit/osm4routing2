@@ -4,12 +4,22 @@ use osmpbfreader::objects::{NodeId, WayId};
 use std::collections::{HashMap, HashSet};
 
 // Way as represented in OpenStreetMap
-#[derive(Default)]
 struct Way {
     id: WayId,
     nodes: Vec<NodeId>,
     properties: EdgeProperties,
     tags: HashMap<String, String>,
+}
+
+impl Default for Way {
+    fn default() -> Self {
+        Self {
+            id: WayId(0),
+            nodes: vec![],
+            properties: EdgeProperties::default(),
+            tags: HashMap::default(),
+        }
+    }
 }
 
 #[derive(Default)]

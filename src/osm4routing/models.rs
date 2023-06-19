@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::categorize::EdgeProperties;
 use osmpbfreader::objects::{NodeId, WayId};
 
@@ -27,7 +29,6 @@ impl Default for Node {
 }
 
 // Edge is a topological representation with only two extremities and no geometry
-#[derive(Default)]
 pub struct Edge {
     pub id: String,
     pub osm_id: WayId,
@@ -37,6 +38,21 @@ pub struct Edge {
     pub properties: EdgeProperties,
     pub nodes: Vec<NodeId>,
     pub tags: std::collections::HashMap<String, String>,
+}
+
+impl Default for Edge {
+    fn default() -> Self {
+        Self {
+            id: "".to_string(),
+            osm_id: WayId(0),
+            source: NodeId(1),
+            target: NodeId(1),
+            geometry: vec![],
+            properties: EdgeProperties::default(),
+            nodes: vec![],
+            tags: HashMap::default(),
+        }
+    }
 }
 
 impl Edge {
