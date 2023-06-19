@@ -4,10 +4,12 @@ use osmpbfreader::objects::{NodeId, WayId};
 use std::collections::{HashMap, HashSet};
 
 // Way as represented in OpenStreetMap
+#[derive(Default)]
 struct Way {
     id: WayId,
     nodes: Vec<NodeId>,
     properties: EdgeProperties,
+    tags: HashMap<String, String>,
 }
 
 #[derive(Default)]
@@ -16,6 +18,7 @@ pub struct Reader {
     ways: Vec<Way>,
     nodes_to_keep: HashSet<NodeId>,
     forbidden: HashMap<String, HashSet<String>>,
+    tags_to_read: HashSet<String>,
 }
 
 impl Reader {
@@ -28,6 +31,11 @@ impl Reader {
             .entry(key.to_string())
             .or_default()
             .insert(value.to_string());
+        self
+    }
+
+    pub fn read_tag(mut self, key: &str) -> Self {
+        self.tags_to_read.insert(key.to_string());
         self
     }
 
@@ -69,6 +77,7 @@ impl Reader {
                     geometry,
                     properties: way.properties,
                     nodes,
+                    tags: way.tags.clone(),
                 });
 
                 source = node_id;
@@ -85,6 +94,7 @@ impl Reader {
             if let osmpbfreader::OsmObj::Way(way) = obj {
                 let mut skip = false;
                 let mut properties = EdgeProperties::default();
+                let mut tags = HashMap::new();
                 for (key, val) in way.tags.iter() {
                     properties.update(key.to_string(), val.to_string());
                     if self
@@ -94,6 +104,9 @@ impl Reader {
                         == Some(true)
                     {
                         skip = true;
+                    }
+                    if self.tags_to_read.contains(key.as_str()) {
+                        tags.insert(key.to_string(), val.to_string());
                     }
                 }
                 properties.normalize();
@@ -105,6 +118,7 @@ impl Reader {
                         id: way.id,
                         nodes: way.nodes,
                         properties,
+                        tags,
                     });
                 }
             }
@@ -175,9 +189,8 @@ fn test_real_all() {
 #[test]
 fn test_count_nodes() {
     let ways = vec![Way {
-        id: WayId(0),
         nodes: vec![NodeId(1), NodeId(2), NodeId(3)],
-        properties: EdgeProperties::default(),
+        ..Default::default()
     }];
     let mut nodes = HashMap::new();
     nodes.insert(NodeId(1), Node::default());
@@ -206,14 +219,12 @@ fn test_split() {
     nodes.insert(NodeId(5), Node::default());
     let ways = vec![
         Way {
-            id: WayId(0),
             nodes: vec![NodeId(1), NodeId(2), NodeId(3)],
-            properties: EdgeProperties::default(),
+            ..Default::default()
         },
         Way {
-            id: WayId(0),
             nodes: vec![NodeId(4), NodeId(5), NodeId(2)],
-            properties: EdgeProperties::default(),
+            ..Default::default()
         },
     ];
     let mut r = Reader {
@@ -256,4 +267,14 @@ fn way_of_node() {
     let (_nodes, edges) = r.read("src/osm4routing/test_data/minimal.osm.pbf").unwrap();
 
     assert_eq!(2, edges[0].nodes.len());
+}
+
+#[test]
+fn read_tags() {
+    let (_nodes, edges) = Reader::new()
+        .read_tag("highway")
+        .read("src/osm4routing/test_data/minimal.osm.pbf")
+        .unwrap();
+
+    assert_eq!("secondary", edges[0].tags.get("highway").unwrap());
 }

@@ -27,6 +27,7 @@ impl Default for Node {
 }
 
 // Edge is a topological representation with only two extremities and no geometry
+#[derive(Default)]
 pub struct Edge {
     pub id: String,
     pub osm_id: WayId,
@@ -35,6 +36,7 @@ pub struct Edge {
     pub geometry: Vec<Coord>,
     pub properties: EdgeProperties,
     pub nodes: Vec<NodeId>,
+    pub tags: std::collections::HashMap<String, String>,
 }
 
 impl Edge {
@@ -88,17 +90,12 @@ fn distance(start: Coord, end: Coord) -> f64 {
 #[test]
 fn test_as_wkt() {
     let edge = Edge {
-        id: "0".to_string(),
-        osm_id: WayId(0),
-        source: NodeId(0),
-        target: NodeId(0),
         geometry: vec![
             Coord { lon: 0., lat: 0. },
             Coord { lon: 1., lat: 0. },
             Coord { lon: 0., lat: 1. },
         ],
-        properties: EdgeProperties::default(),
-        nodes: vec![],
+        ..Default::default()
     };
     assert!(
         "LINESTRING(0.0000000 0.0000000, 1.0000000 0.0000000, 0.0000000 1.0000000)"
@@ -117,10 +114,6 @@ fn test_distance() {
 #[test]
 fn test_length_until() {
     let e = Edge {
-        id: "".to_string(),
-        osm_id: WayId(0),
-        properties: EdgeProperties::default(),
-        source: NodeId(0),
         target: NodeId(2),
         nodes: vec![NodeId(0), NodeId(1), NodeId(2)],
         geometry: vec![
@@ -128,6 +121,7 @@ fn test_length_until() {
             Coord { lon: 1., lat: 0. },
             Coord { lon: 1., lat: 1. },
         ],
+        ..Default::default()
     };
 
     assert!((1. - e.length_until(&NodeId(1)) / (1853. * 60.)).abs() < 0.01);
