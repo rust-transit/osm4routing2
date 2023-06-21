@@ -49,6 +49,14 @@ impl Edge {
         format!("LINESTRING({})", coords.as_slice().join(", "))
     }
 
+    // Coordinates in the GeoJSON format
+    pub fn coordinates(&self) -> Vec<Vec<f64>> {
+        self.geometry
+            .iter()
+            .map(|coord| vec![coord.lon, coord.lat])
+            .collect()
+    }
+
     // Length in meters of the edge
     pub fn length(&self) -> f64 {
         self.geometry

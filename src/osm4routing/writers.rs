@@ -1,4 +1,7 @@
 use super::models::*;
+use serde_json::{json, Value};
+use std::fs::File;
+use std::io::Write;
 
 pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
     let edges_path = std::path::Path::new("edges.csv");
@@ -50,4 +53,43 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
     }
 }
 
-// pub fn pg(nodes: Vec<Node>, edges: Vec<Edge>) {}
+pub fn geojson(_: Vec<Node>, edges: Vec<Edge>) {
+    let features: Vec<Value> = edges
+        .iter()
+        .map(|edge| {
+            let properties = json!({
+                "id": edge.id,
+                "osm_id": edge.osm_id.0,
+                "source": edge.source.0,
+                "target": edge.target.0,
+                "length": edge.length(),
+                "foot": edge.properties.foot,
+                "car_forward": edge.properties.car_forward,
+                "car_backward": edge.properties.car_backward,
+                "bike_forward": edge.properties.bike_forward,
+                "bike_backward": edge.properties.bike_backward,
+                "train": edge.properties.train,
+            });
+
+            json!({
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": edge.coordinates(),
+                },
+                "properties": properties,
+            })
+        })
+        .collect();
+
+    let feature_collection = json!({
+        "type": "FeatureCollection",
+        "features": features,
+    });
+
+    let mut file = File::create("data.geojson")
+        .expect("Unable to create file");
+    file.write_all(feature_collection.to_string().as_bytes())
+        .expect("Unable to write data");
+}
+
