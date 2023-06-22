@@ -1,7 +1,9 @@
-use super::models::*;
-use serde_json::{json, Value};
 use std::fs::File;
-use std::io::Write;
+use std::io::{BufWriter, Write};
+
+use serde_json::{json, Value};
+
+use super::models::*;
 
 pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
     let edges_path = std::path::Path::new("edges.csv");
@@ -87,9 +89,13 @@ pub fn geojson(_: Vec<Node>, edges: Vec<Edge>) {
         "features": features,
     });
 
-    let mut file = File::create("data.geojson")
+    let file = File::create("data.geojson")
         .expect("Unable to create file");
-    file.write_all(feature_collection.to_string().as_bytes())
-        .expect("Unable to write data");
+    (|| -> Result<(), std::io::Error> {
+        let mut writer = BufWriter::new(file);
+        serde_json::to_writer(&mut writer, &feature_collection)?;
+        writer.write_all(b"\n")?;
+        writer.flush()?;
+        Ok(())
+    })().expect("Unable to write file");
 }
-
