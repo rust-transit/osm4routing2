@@ -23,6 +23,10 @@ The `id` property of an edge is unique, while the `osm_id` can be duplicated.
 
 If you prefer having the files in database, you can run the very basic `import_postgres.sh` script.
 
+## Importing in a database
+
+If you prefer having the files in database, you can run the very basic `import_postgres.sh` script.
+
 It supposes that a database `osm4routing` exists (otherwise modify it to your needs).
 
 ## Using as a library
@@ -41,6 +45,12 @@ If you wand to reject certain edges based on their tag, use the `Reader` (it als
 ```
 let (nodes, edges) = osm4routing::Reader::new().reject("area", "yes").read("some_data.osm.pbf")?;
 
+```
+
+If you want only specific tags, use `required`; it accepts "*" if any value is accepted; if multiple conditions are given, it will accept any way that matches at least one of the values.
+
+```
+let (nodes, edges) = osm4routing::Reader::new().require("railway", "rail").read("some_data.osm.pbf")?;
 ```
 
 If you need to read some tags, pass them to the `reader`:
