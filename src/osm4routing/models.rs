@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::categorize::EdgeProperties;
 use osmpbfreader::objects::{NodeId, WayId};
 
@@ -6,6 +8,23 @@ use osmpbfreader::objects::{NodeId, WayId};
 pub struct Coord {
     pub lon: f64,
     pub lat: f64,
+}
+
+impl Coord {
+    pub fn distance_to(&self, end: Coord) -> f64 {
+        let r: f64 = 6_378_100.0;
+
+        let d_lon: f64 = (end.lon - self.lon).to_radians();
+        let d_lat: f64 = (end.lat - self.lat).to_radians();
+        let lat1: f64 = (self.lat).to_radians();
+        let lat2: f64 = (end.lat).to_radians();
+
+        let a: f64 = ((d_lat / 2.0).sin()) * ((d_lat / 2.0).sin())
+            + ((d_lon / 2.0).sin()) * ((d_lon / 2.0).sin()) * (lat1.cos()) * (lat2.cos());
+        let c: f64 = 2.0 * ((a.sqrt()).atan2((1.0 - a).sqrt()));
+
+        r * c
+    }
 }
 
 // Node is the OpenStreetMap node
@@ -35,6 +54,22 @@ pub struct Edge {
     pub geometry: Vec<Coord>,
     pub properties: EdgeProperties,
     pub nodes: Vec<NodeId>,
+    pub tags: std::collections::HashMap<String, String>,
+}
+
+impl Default for Edge {
+    fn default() -> Self {
+        Self {
+            id: "".to_string(),
+            osm_id: WayId(0),
+            source: NodeId(1),
+            target: NodeId(1),
+            geometry: vec![],
+            properties: EdgeProperties::default(),
+            nodes: vec![],
+            tags: HashMap::default(),
+        }
+    }
 }
 
 impl Edge {
@@ -53,7 +88,7 @@ impl Edge {
     pub fn length(&self) -> f64 {
         self.geometry
             .windows(2)
-            .map(|coords| distance(coords[0], coords[1]))
+            .map(|coords| coords[0].distance_to(coords[1]))
             .sum()
     }
 
@@ -61,7 +96,7 @@ impl Edge {
     pub fn length_until(&self, node: &NodeId) -> f64 {
         let mut length = 0.;
         for i in 1..(self.nodes.len()) {
-            length += distance(self.geometry[i - 1], self.geometry[i]);
+            length += self.geometry[i - 1].distance_to(self.geometry[i]);
             if &self.nodes[i] == node {
                 return length;
             }
@@ -70,35 +105,15 @@ impl Edge {
     }
 }
 
-fn distance(start: Coord, end: Coord) -> f64 {
-    let r: f64 = 6_378_100.0;
-
-    let d_lon: f64 = (end.lon - start.lon).to_radians();
-    let d_lat: f64 = (end.lat - start.lat).to_radians();
-    let lat1: f64 = (start.lat).to_radians();
-    let lat2: f64 = (end.lat).to_radians();
-
-    let a: f64 = ((d_lat / 2.0).sin()) * ((d_lat / 2.0).sin())
-        + ((d_lon / 2.0).sin()) * ((d_lon / 2.0).sin()) * (lat1.cos()) * (lat2.cos());
-    let c: f64 = 2.0 * ((a.sqrt()).atan2((1.0 - a).sqrt()));
-
-    r * c
-}
-
 #[test]
 fn test_as_wkt() {
     let edge = Edge {
-        id: "0".to_string(),
-        osm_id: WayId(0),
-        source: NodeId(0),
-        target: NodeId(0),
         geometry: vec![
             Coord { lon: 0., lat: 0. },
             Coord { lon: 1., lat: 0. },
             Coord { lon: 0., lat: 1. },
         ],
-        properties: EdgeProperties::default(),
-        nodes: vec![],
+        ..Default::default()
     };
     assert!(
         "LINESTRING(0.0000000 0.0000000, 1.0000000 0.0000000, 0.0000000 1.0000000)"
@@ -111,16 +126,12 @@ fn test_distance() {
     let a = Coord { lon: 0., lat: 0. };
     let b = Coord { lon: 1., lat: 0. };
 
-    assert!((1. - (distance(a, b) / (1853. * 60.))).abs() < 0.01);
+    assert!(1. - (a.distance_to(b) / (1853. * 60.)).abs() < 0.01);
 }
 
 #[test]
 fn test_length_until() {
     let e = Edge {
-        id: "".to_string(),
-        osm_id: WayId(0),
-        properties: EdgeProperties::default(),
-        source: NodeId(0),
         target: NodeId(2),
         nodes: vec![NodeId(0), NodeId(1), NodeId(2)],
         geometry: vec![
@@ -128,6 +139,7 @@ fn test_length_until() {
             Coord { lon: 1., lat: 0. },
             Coord { lon: 1., lat: 1. },
         ],
+        ..Default::default()
     };
 
     assert!((1. - e.length_until(&NodeId(1)) / (1853. * 60.)).abs() < 0.01);
