@@ -20,6 +20,7 @@ fn main() {
             Err(e) => println!("Error: {}", e),
         }
     } else {
+        
         match csv_read(args.get_str("<nodes.csv>"), args.get_str("<ways.csv>"))  {
             Ok((nodes, edges)) => handle_output_format(fmt, nodes, edges),
             Err(e) => println!("Error: {}", e),

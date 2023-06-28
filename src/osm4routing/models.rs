@@ -51,7 +51,7 @@ impl From<OsmWayId> for WayId {
     }
 }
 
-
+// Way is the OpenStreetMap way
 pub struct Way {
     pub id: WayId,
     pub nodes: Nodes,
