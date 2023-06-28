@@ -9,7 +9,7 @@ jobs:
 
     steps:
     - name: Set up Rust
-      uses: actions/setup-rust@v1
+      uses: actions-rust-lang/setup-rust-toolchain@v1
 
     - name: Check out code
       uses: actions/checkout@v3
