@@ -1,5 +1,63 @@
 use super::categorize::EdgeProperties;
-use osmpbfreader::objects::{NodeId, WayId};
+use serde::{Deserialize, Serialize};
+use osmpbfreader::objects::{WayId as OsmWayId, NodeId as OsmNodeId};
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Hash, Copy, Serialize, Deserialize)]
+pub struct NodeId(pub i64);
+
+// for debug only
+impl std::fmt::Display for NodeId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<OsmNodeId> for NodeId {
+    fn from(id: OsmNodeId) -> Self {
+        NodeId(id.0)
+    }
+}
+
+pub struct Nodes(pub Vec<NodeId>);
+
+impl Nodes {
+    pub fn iter(&self) -> impl Iterator<Item = &NodeId> {
+        self.0.iter()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl From<Vec<OsmNodeId>> for Nodes {
+    fn from(nodes: Vec<OsmNodeId>) -> Self {
+        Nodes(nodes.into_iter().map(|id| NodeId::from(id)).collect())
+    }
+}
+
+impl<'a> From<&'a OsmNodeId> for NodeId {
+    fn from(node: &'a OsmNodeId) -> Self {
+        NodeId(node.0)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Hash, Copy, Serialize, Deserialize)]
+pub struct WayId(pub i64);
+
+impl From<OsmWayId> for WayId {
+    fn from(id: OsmWayId) -> Self {
+        WayId(id.0)
+    }
+}
+
+
+pub struct Way {
+    pub id: WayId,
+    pub nodes: Nodes,
+    pub properties: EdgeProperties,
+}
+
 
 // Coord are coordinates in decimal degress WGS84
 #[derive(Copy, Clone, Default)]
