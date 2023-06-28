@@ -1,4 +1,6 @@
+on: [push]
 name: Rust tests
+
 
 jobs:
   build:
