@@ -68,11 +68,11 @@ impl Reader {
     }
 
     // print stats
+    for (way_index, node_id) in missing_node_stats {
+      println!("Way {} is missing node {}", way_index, node_id);
+    }
     println!("{} ways removed ({:.2}%) because of missing nodes", removed_ways_count, removed_ways_percentage);
     println!("Missing nodes stats:");
-    for (way_index, node_id) in missing_node_stats {
-        println!("Way {} is missing node {}", way_index, node_id);
-    }
   }
 
   /// Splits a way into multiple edges based on nodes with more than one usage.
