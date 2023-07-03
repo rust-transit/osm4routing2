@@ -63,8 +63,8 @@ impl Reader {
     let removed_ways_percentage = (removed_ways_count as f32 / self.ways.len() as f32) * 100.0;
 
     // remove ways with missing nodes
-    for way_index in ways_to_remove {
-        self.ways.remove(way_index);
+    for way_index in ways_to_remove.iter().rev() {
+        self.ways.remove(*way_index);
     }
 
     // print stats
