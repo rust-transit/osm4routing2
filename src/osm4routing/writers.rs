@@ -91,7 +91,7 @@ pub fn geojson(_: Vec<Node>, edges: Vec<Edge>, output_path: &str) {
 
 
     let geojson_path = std::path::Path::new(output_path).join("data.geojson");
-    let mut file = File::create(&geojson_path)
+    let file = File::create(&geojson_path)
         .expect("Unable to create file");
     (|| -> Result<(), std::io::Error> {
         let mut writer = BufWriter::new(file);
