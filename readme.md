@@ -23,10 +23,6 @@ The `id` property of an edge is unique, while the `osm_id` can be duplicated.
 
 If you prefer having the files in database, you can run the very basic `import_postgres.sh` script.
 
-## Importing in a database
-
-If you prefer having the files in database, you can run the very basic `import_postgres.sh` script.
-
 It supposes that a database `osm4routing` exists (otherwise modify it to your needs).
 
 ## Using as a library
