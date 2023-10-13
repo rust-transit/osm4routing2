@@ -1,11 +1,16 @@
-
-use osm4routing::{osm_read, csv_read, writers, Node, Edge};
-
+use osm4routing::{record_read, writers, loader, Node, Edge};
+use std::collections::HashSet;
+use csv::StringRecord;
 const USAGE: &str = "
-Usage: osm4routing [--format=<output_format>] [--output=<path>] (<source.osm.pbf> | <nodes.csv> <ways.csv>)
+Usage: osm4routing [--wayfilenames=<wayfilenames>] [--nodefilenames=<nodefilenames>] [--adjacentgeohashes=<adjacent_geohashes>] [--waystoload=<ways_to_load>] [--format=<output_format>] [--output=<output>]
 Options:
-    --format=<output_format>  Output format (csv or geojson) [default: csv]
-    --output=<path>           Output directory [default: .]";
+    --wayfilenames=<wayfilenames>  list of way files
+    --adjacentgeohashes=<adjacent_geohashes> list of the 9 geohashes around our current position
+    --waystoload=<adjacent_geohashes> list of ways that pass through the 9 geohashes, without starting in one of them
+    --nodefilenames=<nodefilenames> list of node files
+    --output=<output> output_path for the merged geojson or csv [default: /tmp/]
+    --format=<output_format>  Output format (csv or geojson) [default: geojson]
+    ";
 
 fn main() {
     let args = docopt::Docopt::new(USAGE)
@@ -14,6 +19,20 @@ fn main() {
         .unwrap_or_else(|e| e.exit());
 
     let fmt = args.get_str("--format");
+    let way_files_iterator = args.get_str("--wayfilenames").split(",");
+    let adjacentgeohashes_iterator = args.get_str("--adjacentgeohashes").split(",");
+    let ways_to_load_iterator = args.get_str("--waystoload").split(","); 
+    let node_files_iterator = args.get_str("--nodefilenames").split(",");
+
+    let way_files: Vec<&str> = way_files_iterator.collect();
+    let node_files: Vec<&str> = node_files_iterator.collect();
+    let adjacentgeohashes: Vec<&str> = adjacentgeohashes_iterator.collect();
+    let ways_to_load_vec: Vec<&str> = ways_to_load_iterator.collect();
+
+    let mut nodes_to_load: Vec<i64>=Vec::new();
+    let mut merged_way_records:  Vec<StringRecord>=Vec::new();
+    let mut merged_node_records:  Vec<StringRecord>=Vec::new();
+    
     let output = match args.get_str("--output") {
         "" => ".",
         o => {
@@ -22,20 +41,31 @@ fn main() {
         },
     };  
 
+    // Convert the Vec<&str> into a HashSet<&str> for quicker searches
+    let ways_to_load_set: HashSet<&str> = ways_to_load_vec.into_iter().collect();
 
-    if args.get_bool("<source.osm.pbf>") {
-        match osm_read(args.get_str("<source.osm.pbf>")) {
-            Ok((nodes, edges)) => handle_output_format(fmt, nodes, edges, output),
-            Err(e) => println!("Error: {}", e),
-        }
-    } else {
-        
-        match csv_read(args.get_str("<nodes.csv>"), args.get_str("<ways.csv>"))  {
-            Ok((nodes, edges)) => handle_output_format(fmt, nodes, edges, output),
-            Err(e) => println!("Error: {}", e),
-        }
+    match loader::merge_csv_ways(way_files,"/tmp/way_properties.csv", adjacentgeohashes.clone(), ways_to_load_set) {
+        Ok((f_records, nodes)) => {
+        merged_way_records=f_records;
+        nodes_to_load=nodes;},
+        Err(e) => println!("Error: {}", e),
+    };
+   // println!("{:?}",nodes_to_load);
+
+    let nodes_to_load_hash: HashSet<i64> = HashSet::from_iter(nodes_to_load.iter().cloned());
+    match loader::merge_csv_nodes(node_files, adjacentgeohashes, nodes_to_load_hash) {
+        Ok(f_records) => {
+        merged_node_records=f_records;},
+        Err(e) => println!("Error: {}", e),
+    };
+
+
+    match record_read(merged_node_records, merged_way_records)  {
+        Ok((nodes, edges)) => {handle_output_format(fmt, nodes, edges, output)},
+        Err(e) =>  println!("Error: {}", e),
     }
 }
+
 
 fn handle_output_format(fmt: &str, nodes: Vec<Node>, edges: Vec<Edge>, output_path: &str) {
     match fmt {

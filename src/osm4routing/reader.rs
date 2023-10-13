@@ -195,6 +195,28 @@ impl CsvReader {
     Ok(())
   }
 
+
+  pub fn read_records(&mut self, nodes_record: Vec<StringRecord>, ways_record: Vec<StringRecord>) -> Result<(Vec<Node>, Vec<Edge>), Box<dyn Error>> {
+    self.read_nodes_record(nodes_record)?;
+    self.read_ways_record(ways_record)?;
+    self.reader.sanity_checks_nodes();
+    Ok((self.reader.nodes(), self.reader.ways()))
+  }
+
+  fn read_ways_record(&mut self, record: Vec<StringRecord>) -> Result<(), Box<dyn Error>> {
+    for result in record {
+      self.consume_way(&result)?;
+    }
+    Ok(())
+  }
+
+  fn read_nodes_record(&mut self, record: Vec<StringRecord>) -> Result<(), Box<dyn Error>> {
+    for result in record {
+      self.consume_node(&result)?;
+    }
+    Ok(())
+  }
+
   /// Reads the nodes from the given CSV file.
   /// 
   /// # Arguments
@@ -260,7 +282,6 @@ impl CsvReader {
     let node_id: NodeId = NodeId(record[0].parse::<i64>()?);
     let lat: f64 = record[1].parse::<f64>()?;
     let lon: f64 = record[2].parse::<f64>()?;
-
     let node = Node {
       id: node_id,
       coord: Coord { lat, lon },
@@ -421,6 +442,12 @@ impl OsmReader {
 pub fn csv_read(nodes_file: &str, ways_file: &str) -> Result<(Vec<Node>, Vec<Edge>), Box<dyn Error>> {
   CsvReader::new().read(nodes_file, ways_file)
 }
+pub fn record_read(nodes_record: Vec<StringRecord>, ways_record: Vec<StringRecord>) -> Result<(Vec<Node>, Vec<Edge>), Box<dyn Error>> {
+  CsvReader::new().read_records(nodes_record, ways_record)
+}
+
+
+
 
 pub fn osm_read(filename: &str) -> Result<(Vec<Node>, Vec<Edge>), Box<dyn Error>> {
   OsmReader::new().read(filename)
