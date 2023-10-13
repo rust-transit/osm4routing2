@@ -8,8 +8,8 @@ Options:
     --adjacentgeohashes=<adjacent_geohashes> list of the 9 geohashes around our current position
     --waystoload=<adjacent_geohashes> list of ways that pass through the 9 geohashes, without starting in one of them
     --nodefilenames=<nodefilenames> list of node files
-    --output=<output> output_path for the merged geojson or csv [default: /tmp/]
-    --format=<output_format>  Output format (csv or geojson) [default: geojson]
+    --output=<output> output_path for the merged geojson or csv
+    --format=<output_format>  Output format (csv or geojson) [default: csv]
     ";
 
 fn main() {
@@ -43,23 +43,18 @@ fn main() {
 
     // Convert the Vec<&str> into a HashSet<&str> for quicker searches
     let ways_to_load_set: HashSet<&str> = ways_to_load_vec.into_iter().collect();
-
-    match loader::merge_csv_ways(way_files,"/tmp/way_properties.csv", adjacentgeohashes.clone(), ways_to_load_set) {
+    match loader::merge_csv_ways(way_files,&[output,"/way_properties.csv"].join(""), adjacentgeohashes.clone(), ways_to_load_set) {
         Ok((f_records, nodes)) => {
         merged_way_records=f_records;
         nodes_to_load=nodes;},
         Err(e) => println!("Error: {}", e),
     };
-   // println!("{:?}",nodes_to_load);
-
     let nodes_to_load_hash: HashSet<i64> = HashSet::from_iter(nodes_to_load.iter().cloned());
     match loader::merge_csv_nodes(node_files, adjacentgeohashes, nodes_to_load_hash) {
         Ok(f_records) => {
         merged_node_records=f_records;},
         Err(e) => println!("Error: {}", e),
     };
-
-
     match record_read(merged_node_records, merged_way_records)  {
         Ok((nodes, edges)) => {handle_output_format(fmt, nodes, edges, output)},
         Err(e) =>  println!("Error: {}", e),
