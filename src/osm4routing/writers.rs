@@ -1,7 +1,7 @@
 use super::models::*;
 
-pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
-    let edges_path = std::path::Path::new("edges.csv");
+pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>, edgesfile: &str, nodesfile: &str) {
+    let edges_path = std::path::Path::new(edgesfile);
     let mut edges_csv = csv::Writer::from_path(edges_path).unwrap();
     edges_csv
         .serialize(vec![
@@ -38,7 +38,7 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>) {
             .expect("CSV: unable to write edge");
     }
 
-    let nodes_path = std::path::Path::new("nodes.csv");
+    let nodes_path = std::path::Path::new(nodesfile);
     let mut nodes_csv = csv::Writer::from_path(nodes_path).unwrap();
     nodes_csv
         .serialize(vec!["id", "lon", "lat"])
