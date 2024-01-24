@@ -1,12 +1,14 @@
+use clap::Parser;
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    source_pbf: String,
+}
 fn main() {
-    const USAGE: &str = "
-Usage: osm4routing <source.osm.pbf>";
-    let args = docopt::Docopt::new(USAGE)
-        .unwrap()
-        .parse()
-        .unwrap_or_else(|e| e.exit());
-    let filename = args.get_str("<source.osm.pbf>");
-    match osm4routing::read(filename) {
+    let cli = Cli::parse();
+
+    match osm4routing::read(&cli.source_pbf) {
         Ok((nodes, edges)) => osm4routing::writers::csv(nodes, edges),
         Err(error) => println!("Error: {}", error),
     }
