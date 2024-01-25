@@ -36,7 +36,7 @@ pub enum TrainAccessibility {
 }
 
 // Edgeself contains what mode can use the edge in each direction
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct EdgeProperties {
     pub foot: FootAccessibility,
     pub car_forward: CarAccessibility,

@@ -55,3 +55,9 @@ If you need to read some tags, pass them to the `reader`:
 let (nodes, edges) = osm4routing::Reader::new().read_tag("highway").read("some_data.osm.pbf")?;
 
 ```
+
+If want to contract edges that come from different OpenStreetMap ways, but where there is no intersection (that can happen when the tags change, e.g. a tunnel):
+
+```
+let (nodes, edges) = osm4routing::Reader::new().merge_ways().read("some_data.osm.pbf")?;
+```
