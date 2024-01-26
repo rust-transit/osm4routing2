@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::categorize::EdgeProperties;
-use osmpbfreader::objects::{NodeId, WayId};
+pub use osmpbfreader::objects::{NodeId, WayId};
 
 // Coord are coordinates in decimal degress WGS84
 #[derive(Copy, Clone, Default)]
