@@ -9,7 +9,7 @@ struct Cli {
     #[arg(short, long, default_value = "nodes.csv")]
     nodes_file: String,
     /// Output path of the csv file that will contain the edges
-    #[arg(short, long, default_value = "nodes.csv")]
+    #[arg(short, long, default_value = "edges.csv")]
     edges_file: String,
 }
 fn main() {
