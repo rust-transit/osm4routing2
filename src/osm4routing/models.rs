@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 
 use super::categorize::EdgeProperties;
 pub use osmpbfreader::objects::{NodeId, WayId};
@@ -46,6 +47,7 @@ impl Default for Node {
 }
 
 // Edge is a topological representation with only two extremities and no geometry
+#[derive(Clone)]
 pub struct Edge {
     pub id: String,
     pub osm_id: WayId,
@@ -56,6 +58,20 @@ pub struct Edge {
     pub nodes: Vec<NodeId>,
     pub tags: std::collections::HashMap<String, String>,
 }
+
+impl Hash for Edge {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl PartialEq for Edge {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for Edge {}
 
 impl Default for Edge {
     fn default() -> Self {
@@ -102,6 +118,40 @@ impl Edge {
             }
         }
         0.
+    }
+
+    // Changes the direction of the geometry, source and target
+    // Returns a new Edge
+    pub fn reverse(mut self) -> Self {
+        self.nodes.reverse();
+        self.geometry.reverse();
+        std::mem::swap(&mut self.target, &mut self.source);
+        self
+    }
+
+    // Merges two edges together. It supposes that self.target == e2.source and will panic otherwise
+    fn unsafe_merge(mut self, other: Self) -> Self {
+        assert!(self.target == other.source);
+        self.id = format!("{}-{}", self.id, other.id);
+        self.target = other.target;
+        self.nodes = [&self.nodes, &other.nodes[1..]].concat();
+        self.geometry = [&self.geometry, &other.geometry[1..]].concat();
+        self
+    }
+
+    // Creates a new edges by stiching together two edges at node `node`
+    // Will panic if the node is not a common extremity for both
+    pub fn merge(edge1: &Self, edge2: &Self, node: NodeId) -> Self {
+        let edge1 = edge1.clone();
+        let edge2 = edge2.clone();
+        assert!(edge1.source == node || edge1.target == node);
+        assert!(edge2.source == node || edge2.target == node);
+        match (edge1.target == node, edge2.source == node) {
+            (true, true) => edge1.unsafe_merge(edge2),
+            (false, true) => edge1.reverse().unsafe_merge(edge2),
+            (true, false) => edge1.unsafe_merge(edge2.reverse()),
+            (false, false) => edge1.reverse().unsafe_merge(edge2.reverse()),
+        }
     }
 }
 

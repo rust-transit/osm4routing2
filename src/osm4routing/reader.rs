@@ -30,6 +30,7 @@ pub struct Reader {
     forbidden_tags: HashMap<String, HashSet<String>>,
     required_tags: HashMap<String, HashSet<String>>,
     tags_to_read: HashSet<String>,
+    should_merge_ways: bool,
 }
 
 impl Reader {
@@ -58,6 +59,11 @@ impl Reader {
         self
     }
 
+    pub fn merge_ways(mut self) -> Self {
+        self.should_merge_ways = true;
+        self
+    }
+
     fn count_nodes_uses(&mut self) {
         for way in &self.ways {
             for (i, node_id) in way.nodes.iter().enumerate() {
@@ -65,7 +71,7 @@ impl Reader {
                     .nodes
                     .get_mut(node_id)
                     .expect("Missing node, id: {node_id}");
-                // Count double extremities nodes
+                // Count double extremities nodes to be sure to include dead-ends
                 if i == 0 || i == way.nodes.len() - 1 {
                     node.uses += 2;
                 } else {
@@ -105,6 +111,65 @@ impl Reader {
             }
         }
         result
+    }
+
+    // An OSM way can be split even if it’s — in a topologicial sense — the same edge
+    // For instance a road crossing a river, will be split to allow a tag bridge=yes
+    // Even if there was no crossing
+    fn do_merge_edges(&mut self, edges: Vec<Edge>) -> Vec<Edge> {
+        let initial_edges_count = edges.len();
+
+        // We build an adjacency map for every node that might have exactly two edges
+        let mut neighbors: HashMap<NodeId, Vec<_>> = HashMap::new();
+        for edge in edges.iter() {
+            // Extremities of a way in `count_nodes_uses` are counted twice to avoid pruning deadends.
+            // We want to look at nodes with at two extremities, hence 4 uses
+            if self.nodes.get(&edge.source).is_none() {
+                println!("Problem with node {}, edge {}", &edge.source.0, edge.id);
+            }
+            if self.nodes.get(&edge.source).unwrap().uses == 4 {
+                neighbors.entry(edge.source).or_default().push(edge);
+            }
+            if self.nodes.get(&edge.target).unwrap().uses == 4 {
+                neighbors.entry(edge.target).or_default().push(edge);
+            }
+        }
+
+        let mut result = Vec::new();
+        let mut already_merged = HashSet::new();
+        for (node, edges) in neighbors.drain() {
+            // We merge two edges at the node if there are only two edges
+            // The edges must have the same accessibility properties
+            // The edges must be from different ways (no surface)
+            // The edges must not have been merged this iteration (they might be re-merged through a recurive call)
+            if edges.len() == 2
+                && edges[0].properties == edges[1].properties
+                && edges[0].id != edges[1].id
+                && !already_merged.contains(&edges[0].id)
+                && !already_merged.contains(&edges[1].id)
+            {
+                let edge1 = edges[0];
+                let edge2 = edges[1];
+                result.push(Edge::merge(edge1, edge2, node));
+                already_merged.insert(edge1.id.clone());
+                already_merged.insert(edge2.id.clone());
+                self.nodes.remove(&node);
+            }
+        }
+
+        for edge in edges.into_iter() {
+            if !already_merged.contains(&edge.id) {
+                result.push(edge);
+            }
+        }
+
+        // If we reduced the number of edges, that means that we merged edges
+        // They might need to be merged again, recursively
+        if initial_edges_count > result.len() {
+            self.do_merge_edges(result)
+        } else {
+            result
+        }
     }
 
     fn is_user_rejected(&self, way: &osmpbfreader::Way) -> bool {
@@ -199,7 +264,13 @@ impl Reader {
         let file_nodes = std::fs::File::open(path).map_err(|e| e.to_string())?;
         self.read_nodes(file_nodes);
         self.count_nodes_uses();
-        Ok((self.nodes(), self.edges()))
+
+        let edges = if self.should_merge_ways {
+            self.do_merge_edges(self.edges())
+        } else {
+            self.edges()
+        };
+        Ok((self.nodes(), edges))
     }
 }
 
@@ -343,4 +414,18 @@ fn require_multiple_tags() {
         .read("src/osm4routing/test_data/minimal.osm.pbf")
         .unwrap();
     assert_eq!(1, ways.len());
+}
+
+#[test]
+fn merging_edges() {
+    let (_nodes, edges) = Reader::new()
+        .read("src/osm4routing/test_data/ways_to_merge.osm.pbf")
+        .unwrap();
+    assert_eq!(2, edges.len());
+
+    let (_nodes, edges) = Reader::new()
+        .merge_ways()
+        .read("src/osm4routing/test_data/ways_to_merge.osm.pbf")
+        .unwrap();
+    assert_eq!(1, edges.len());
 }
