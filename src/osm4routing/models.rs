@@ -11,6 +11,15 @@ pub struct Coord {
     pub lat: f64,
 }
 
+impl From<Coord> for geo_types::Coord<f64> {
+    fn from(value: Coord) -> Self {
+        Self {
+            x: value.lon,
+            y: value.lat,
+        }
+    }
+}
+
 impl Coord {
     pub fn distance_to(&self, end: Coord) -> f64 {
         let r: f64 = 6_378_100.0;
