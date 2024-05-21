@@ -5,7 +5,7 @@ use super::categorize::EdgeProperties;
 pub use osmpbfreader::objects::{NodeId, WayId};
 
 // Coord are coordinates in decimal degress WGS84
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Coord {
     pub lon: f64,
     pub lat: f64,
@@ -38,7 +38,7 @@ impl Coord {
 }
 
 // Node is the OpenStreetMap node
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Node {
     pub id: NodeId,
     pub coord: Coord,
@@ -56,7 +56,7 @@ impl Default for Node {
 }
 
 // Edge is a topological representation with only two extremities and no geometry
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Edge {
     pub id: String,
     pub osm_id: WayId,
