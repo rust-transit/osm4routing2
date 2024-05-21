@@ -124,7 +124,7 @@ impl Reader {
         for edge in edges.iter() {
             // Extremities of a way in `count_nodes_uses` are counted twice to avoid pruning deadends.
             // We want to look at nodes with at two extremities, hence 4 uses
-            if self.nodes.get(&edge.source).is_none() {
+            if !self.nodes.contains_key(&edge.source) {
                 println!("Problem with node {}, edge {}", &edge.source.0, edge.id);
             }
             if self.nodes.get(&edge.source).unwrap().uses == 4 {
