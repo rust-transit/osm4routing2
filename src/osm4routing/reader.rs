@@ -140,10 +140,12 @@ impl Reader {
         for (node, edges) in neighbors.drain() {
             // We merge two edges at the node if there are only two edges
             // The edges must have the same accessibility properties
+            // If the consummer asked to store the tags, the tags must be the same for both edges
             // The edges must be from different ways (no surface)
             // The edges must not have been merged this iteration (they might be re-merged through a recurive call)
             if edges.len() == 2
                 && edges[0].properties == edges[1].properties
+                && edges[0].tags == edges[1].tags
                 && edges[0].id != edges[1].id
                 && !already_merged.contains(&edges[0].id)
                 && !already_merged.contains(&edges[1].id)
