@@ -70,7 +70,7 @@ impl Reader {
                 let node = self
                     .nodes
                     .get_mut(node_id)
-                    .expect("Missing node, id: {node_id}");
+                    .unwrap_or_else(|| panic!("Missing node, id: {}", node_id.0));
                 // Count double extremities nodes to be sure to include dead-ends
                 if i == 0 || i == way.nodes.len() - 1 {
                     node.uses += 2;
