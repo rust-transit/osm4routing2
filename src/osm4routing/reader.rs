@@ -232,9 +232,9 @@ impl Reader {
                         node.id,
                         Node {
                             id: node.id,
-                            coord: Coord {
-                                lon: node.lon(),
-                                lat: node.lat(),
+                            coord: geo_types::Coord {
+                                x: node.lon(),
+                                y: node.lat(),
                             },
                             uses: 0,
                         },

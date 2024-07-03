@@ -5,29 +5,20 @@ use super::categorize::EdgeProperties;
 pub use osmpbfreader::objects::{NodeId, WayId};
 
 // Coord are coordinates in decimal degress WGS84
-#[derive(Copy, Clone, Debug, Default)]
-pub struct Coord {
-    pub lon: f64,
-    pub lat: f64,
+type Coord = geo_types::Coord<f64>;
+
+trait Distance {
+    fn distance_to(&self, end: Coord) -> f64;
 }
 
-impl From<Coord> for geo_types::Coord<f64> {
-    fn from(value: Coord) -> Self {
-        Self {
-            x: value.lon,
-            y: value.lat,
-        }
-    }
-}
-
-impl Coord {
-    pub fn distance_to(&self, end: Coord) -> f64 {
+impl Distance for Coord {
+    fn distance_to(&self, end: Coord) -> f64 {
         let r: f64 = 6_378_100.0;
 
-        let d_lon: f64 = (end.lon - self.lon).to_radians();
-        let d_lat: f64 = (end.lat - self.lat).to_radians();
-        let lat1: f64 = (self.lat).to_radians();
-        let lat2: f64 = (end.lat).to_radians();
+        let d_lon: f64 = (end.x - self.x).to_radians();
+        let d_lat: f64 = (end.y - self.y).to_radians();
+        let lat1: f64 = (self.y).to_radians();
+        let lat2: f64 = (end.y).to_radians();
 
         let a: f64 = ((d_lat / 2.0).sin()) * ((d_lat / 2.0).sin())
             + ((d_lon / 2.0).sin()) * ((d_lon / 2.0).sin()) * (lat1.cos()) * (lat2.cos());
@@ -103,7 +94,7 @@ impl Edge {
         let coords: Vec<String> = self
             .geometry
             .iter()
-            .map(|coord| format!("{:.7} {:.7}", coord.lon, coord.lat))
+            .map(|coord| format!("{:.7} {:.7}", coord.x, coord.y))
             .collect();
 
         format!("LINESTRING({})", coords.as_slice().join(", "))
@@ -168,9 +159,9 @@ impl Edge {
 fn test_as_wkt() {
     let edge = Edge {
         geometry: vec![
-            Coord { lon: 0., lat: 0. },
-            Coord { lon: 1., lat: 0. },
-            Coord { lon: 0., lat: 1. },
+            Coord { x: 0., y: 0. },
+            Coord { x: 1., y: 0. },
+            Coord { x: 0., y: 1. },
         ],
         ..Default::default()
     };
@@ -182,8 +173,8 @@ fn test_as_wkt() {
 
 #[test]
 fn test_distance() {
-    let a = Coord { lon: 0., lat: 0. };
-    let b = Coord { lon: 1., lat: 0. };
+    let a = Coord { x: 0., y: 0. };
+    let b = Coord { x: 1., y: 0. };
 
     assert!(1. - (a.distance_to(b) / (1853. * 60.)).abs() < 0.01);
 }
@@ -194,9 +185,9 @@ fn test_length_until() {
         target: NodeId(2),
         nodes: vec![NodeId(0), NodeId(1), NodeId(2)],
         geometry: vec![
-            Coord { lon: 0., lat: 0. },
-            Coord { lon: 1., lat: 0. },
-            Coord { lon: 1., lat: 1. },
+            Coord { x: 0., y: 0. },
+            Coord { x: 1., y: 0. },
+            Coord { x: 1., y: 1. },
         ],
         ..Default::default()
     };
