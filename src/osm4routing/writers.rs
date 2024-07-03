@@ -45,7 +45,7 @@ pub fn csv(nodes: Vec<Node>, edges: Vec<Edge>, nodes_file: &str, edges_file: &st
         .expect("CSV: unable to write node header");
     for node in nodes {
         nodes_csv
-            .serialize((node.id.0, node.coord.lon, node.coord.lat))
+            .serialize((node.id.0, node.coord.x, node.coord.y))
             .expect("CSV: unable to write node");
     }
 }
