@@ -7,7 +7,7 @@ pub use osmpbfreader::objects::{NodeId, WayId};
 // Coord are coordinates in decimal degress WGS84
 type Coord = geo_types::Coord<f64>;
 
-trait Distance {
+pub trait Distance {
     fn distance_to(&self, end: Coord) -> f64;
 }
 
