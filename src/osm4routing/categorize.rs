@@ -120,12 +120,12 @@ impl EdgeProperties {
                     self.foot = FootAccessibility::Allowed;
                     self.bike_forward = BikeAccessibility::Allowed;
                 }
-                "secondary" => {
+                "secondary" | "secondary_link" => {
                     self.car_forward = CarAccessibility::Secondary;
                     self.foot = FootAccessibility::Allowed;
                     self.bike_forward = BikeAccessibility::Allowed;
                 }
-                "tertiary" => {
+                "tertiary" | "tertiary_link" => {
                     self.car_forward = CarAccessibility::Tertiary;
                     self.foot = FootAccessibility::Allowed;
                     self.bike_forward = BikeAccessibility::Allowed;
@@ -135,7 +135,7 @@ impl EdgeProperties {
                     self.foot = FootAccessibility::Allowed;
                     self.bike_forward = BikeAccessibility::Allowed;
                 }
-                "motorway" | "motorway_link" => {
+                "motorway" | "motorway_link" | "motorway_junction" => {
                     self.car_forward = CarAccessibility::Motorway;
                     self.foot = FootAccessibility::Forbidden;
                     self.bike_forward = BikeAccessibility::Forbidden;
