@@ -2,6 +2,7 @@ use super::categorize::*;
 use super::models::*;
 use osmpbfreader::objects::{NodeId, WayId};
 use std::collections::{HashMap, HashSet};
+use std::path::Path;
 
 // Way as represented in OpenStreetMap
 struct Way {
@@ -259,11 +260,10 @@ impl Reader {
             .collect()
     }
 
-    pub fn read(&mut self, filename: &str) -> Result<(Vec<Node>, Vec<Edge>), String> {
-        let path = std::path::Path::new(filename);
-        let file = std::fs::File::open(path).map_err(|e| e.to_string())?;
+    pub fn read<P: AsRef<Path>>(&mut self, filename: &P) -> Result<(Vec<Node>, Vec<Edge>), String> {
+        let file = std::fs::File::open(filename).map_err(|e| e.to_string())?;
         self.read_ways(file);
-        let file_nodes = std::fs::File::open(path).map_err(|e| e.to_string())?;
+        let file_nodes = std::fs::File::open(filename).map_err(|e| e.to_string())?;
         self.read_nodes(file_nodes);
         self.count_nodes_uses();
 
@@ -277,13 +277,13 @@ impl Reader {
 }
 
 // Read all the nodes and ways of the osm.pbf file
-pub fn read(filename: &str) -> Result<(Vec<Node>, Vec<Edge>), String> {
+pub fn read<P: AsRef<Path>>(filename: &P) -> Result<(Vec<Node>, Vec<Edge>), String> {
     Reader::new().read(filename)
 }
 
 #[test]
 fn test_real_all() {
-    let (nodes, ways) = read("src/osm4routing/test_data/minimal.osm.pbf").unwrap();
+    let (nodes, ways) = read(&"src/osm4routing/test_data/minimal.osm.pbf").unwrap();
     assert_eq!(2, nodes.len());
     assert_eq!(1, ways.len());
 }
@@ -341,7 +341,7 @@ fn test_split() {
 
 #[test]
 fn test_wrong_file() {
-    let r = read("i hope you have no file name like this one");
+    let r = read(&"i hope you have no file name like this one");
     assert!(r.is_err());
 }
 
@@ -349,7 +349,7 @@ fn test_wrong_file() {
 fn forbidden_values() {
     let (_, ways) = Reader::new()
         .reject("highway", "secondary")
-        .read("src/osm4routing/test_data/minimal.osm.pbf")
+        .read(&"src/osm4routing/test_data/minimal.osm.pbf")
         .unwrap();
     assert_eq!(0, ways.len());
 }
@@ -358,7 +358,7 @@ fn forbidden_values() {
 fn forbidden_wildcard() {
     let (_, ways) = Reader::new()
         .reject("highway", "*")
-        .read("src/osm4routing/test_data/minimal.osm.pbf")
+        .read(&"src/osm4routing/test_data/minimal.osm.pbf")
         .unwrap();
     assert_eq!(0, ways.len());
 }
@@ -366,7 +366,9 @@ fn forbidden_wildcard() {
 #[test]
 fn way_of_node() {
     let mut r = Reader::new();
-    let (_nodes, edges) = r.read("src/osm4routing/test_data/minimal.osm.pbf").unwrap();
+    let (_nodes, edges) = r
+        .read(&"src/osm4routing/test_data/minimal.osm.pbf")
+        .unwrap();
 
     assert_eq!(2, edges[0].nodes.len());
 }
@@ -375,7 +377,7 @@ fn way_of_node() {
 fn read_tags() {
     let (_nodes, edges) = Reader::new()
         .read_tag("highway")
-        .read("src/osm4routing/test_data/minimal.osm.pbf")
+        .read(&"src/osm4routing/test_data/minimal.osm.pbf")
         .unwrap();
 
     assert_eq!("secondary", edges[0].tags.get("highway").unwrap());
@@ -385,7 +387,7 @@ fn read_tags() {
 fn require_value_ok() {
     let (_, ways) = Reader::new()
         .require("highway", "secondary")
-        .read("src/osm4routing/test_data/minimal.osm.pbf")
+        .read(&"src/osm4routing/test_data/minimal.osm.pbf")
         .unwrap();
     assert_eq!(1, ways.len());
 }
@@ -394,7 +396,7 @@ fn require_value_ok() {
 fn require_value_missing() {
     let (_, ways) = Reader::new()
         .require("highway", "primary")
-        .read("src/osm4routing/test_data/minimal.osm.pbf")
+        .read(&"src/osm4routing/test_data/minimal.osm.pbf")
         .unwrap();
     assert_eq!(0, ways.len());
 }
@@ -403,7 +405,7 @@ fn require_value_missing() {
 fn require_wildcart() {
     let (_, ways) = Reader::new()
         .require("highway", "*")
-        .read("src/osm4routing/test_data/minimal.osm.pbf")
+        .read(&"src/osm4routing/test_data/minimal.osm.pbf")
         .unwrap();
     assert_eq!(1, ways.len());
 }
@@ -413,7 +415,7 @@ fn require_multiple_tags() {
     let (_, ways) = Reader::new()
         .require("highway", "primary")
         .require("highway", "secondary")
-        .read("src/osm4routing/test_data/minimal.osm.pbf")
+        .read(&"src/osm4routing/test_data/minimal.osm.pbf")
         .unwrap();
     assert_eq!(1, ways.len());
 }
@@ -421,13 +423,13 @@ fn require_multiple_tags() {
 #[test]
 fn merging_edges() {
     let (_nodes, edges) = Reader::new()
-        .read("src/osm4routing/test_data/ways_to_merge.osm.pbf")
+        .read(&"src/osm4routing/test_data/ways_to_merge.osm.pbf")
         .unwrap();
     assert_eq!(2, edges.len());
 
     let (_nodes, edges) = Reader::new()
         .merge_ways()
-        .read("src/osm4routing/test_data/ways_to_merge.osm.pbf")
+        .read(&"src/osm4routing/test_data/ways_to_merge.osm.pbf")
         .unwrap();
     assert_eq!(1, edges.len());
 }
