@@ -260,10 +260,10 @@ impl Reader {
             .collect()
     }
 
-    pub fn read<P: AsRef<Path>>(&mut self, filename: &P) -> Result<(Vec<Node>, Vec<Edge>), String> {
-        let file = std::fs::File::open(filename).map_err(|e| e.to_string())?;
+    pub fn read<P: AsRef<Path>>(&mut self, filename: P) -> Result<(Vec<Node>, Vec<Edge>), String> {
+        let file = std::fs::File::open(filename.as_ref()).map_err(|e| e.to_string())?;
         self.read_ways(file);
-        let file_nodes = std::fs::File::open(filename).map_err(|e| e.to_string())?;
+        let file_nodes = std::fs::File::open(filename.as_ref()).map_err(|e| e.to_string())?;
         self.read_nodes(file_nodes);
         self.count_nodes_uses();
 
@@ -277,13 +277,13 @@ impl Reader {
 }
 
 // Read all the nodes and ways of the osm.pbf file
-pub fn read<P: AsRef<Path>>(filename: &P) -> Result<(Vec<Node>, Vec<Edge>), String> {
+pub fn read<P: AsRef<Path>>(filename: P) -> Result<(Vec<Node>, Vec<Edge>), String> {
     Reader::new().read(filename)
 }
 
 #[test]
 fn test_real_all() {
-    let (nodes, ways) = read(&"src/osm4routing/test_data/minimal.osm.pbf").unwrap();
+    let (nodes, ways) = read("src/osm4routing/test_data/minimal.osm.pbf").unwrap();
     assert_eq!(2, nodes.len());
     assert_eq!(1, ways.len());
 }
@@ -341,7 +341,7 @@ fn test_split() {
 
 #[test]
 fn test_wrong_file() {
-    let r = read(&"i hope you have no file name like this one");
+    let r = read("i hope you have no file name like this one");
     assert!(r.is_err());
 }
 
