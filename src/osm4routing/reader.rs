@@ -1,7 +1,7 @@
 use super::categorize::*;
 use super::models::*;
 use osmpbfreader::objects::{NodeId, WayId};
-use std::collections::{HashMap, HashSet};
+use ahash::{HashMap, HashSet, HashMapExt, HashSetExt};
 use std::path::Path;
 
 // Way as represented in OpenStreetMap
@@ -160,7 +160,7 @@ impl Reader {
             }
         }
 
-        for edge in edges.into_iter() {
+        for edge in edges {
             if !already_merged.contains(&edge.id) {
                 result.push(edge);
             }
