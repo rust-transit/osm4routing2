@@ -1,7 +1,7 @@
 [package]
 name = "osm4routing"
 edition = "2021"
-version = "0.7.2"
+version = "0.8.0"
 authors = ["Tristram Gräbener <tristramg@gmail.com>"]
 description = "Convert OpenStreetMap data into routing friendly CSV"
 homepage = "https://github.com/Tristramg/osm4routing2"
@@ -10,6 +10,7 @@ license = "MIT"
 
 [dependencies]
 osmpbfreader = "0.17.0"
+ahash = "0.8"
 csv = "1.3.0"
 clap = { version = "4.5", features = ["derive"] }
 serde = "1.0"
