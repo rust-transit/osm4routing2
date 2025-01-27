@@ -1,7 +1,7 @@
 use super::categorize::*;
 use super::models::*;
+use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use osmpbfreader::objects::{NodeId, WayId};
-use ahash::{HashMap, HashSet, HashMapExt, HashSetExt};
 use std::path::Path;
 
 // Way as represented in OpenStreetMap
