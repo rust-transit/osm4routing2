@@ -1,4 +1,5 @@
 use super::categorize::*;
+use super::error::Error;
 use super::models::*;
 use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use osmpbfreader::objects::{NodeId, WayId};
@@ -65,13 +66,13 @@ impl Reader {
         self
     }
 
-    fn count_nodes_uses(&mut self) {
+    fn count_nodes_uses(&mut self) -> Result<(), Error> {
         for way in &self.ways {
             for (i, node_id) in way.nodes.iter().enumerate() {
                 let node = self
                     .nodes
                     .get_mut(node_id)
-                    .unwrap_or_else(|| panic!("Missing node, id: {}", node_id.0));
+                    .ok_or(Error::MissingNode(*node_id))?;
                 // Count double extremities nodes to be sure to include dead-ends
                 if i == 0 || i == way.nodes.len() - 1 {
                     node.uses += 2;
@@ -80,6 +81,7 @@ impl Reader {
                 }
             }
         }
+        Ok(())
     }
 
     fn split_way(&self, way: &Way) -> Vec<Edge> {
@@ -260,12 +262,12 @@ impl Reader {
             .collect()
     }
 
-    pub fn read<P: AsRef<Path>>(&mut self, filename: P) -> Result<(Vec<Node>, Vec<Edge>), String> {
-        let file = std::fs::File::open(filename.as_ref()).map_err(|e| e.to_string())?;
+    pub fn read<P: AsRef<Path>>(&mut self, filename: P) -> Result<(Vec<Node>, Vec<Edge>), Error> {
+        let file = std::fs::File::open(filename.as_ref())?;
         self.read_ways(file);
-        let file_nodes = std::fs::File::open(filename.as_ref()).map_err(|e| e.to_string())?;
+        let file_nodes = std::fs::File::open(filename.as_ref())?;
         self.read_nodes(file_nodes);
-        self.count_nodes_uses();
+        self.count_nodes_uses()?;
 
         let edges = if self.should_merge_ways {
             self.do_merge_edges(self.edges())
@@ -277,7 +279,7 @@ impl Reader {
 }
 
 // Read all the nodes and ways of the osm.pbf file
-pub fn read<P: AsRef<Path>>(filename: P) -> Result<(Vec<Node>, Vec<Edge>), String> {
+pub fn read<P: AsRef<Path>>(filename: P) -> Result<(Vec<Node>, Vec<Edge>), Error> {
     Reader::new().read(filename)
 }
 
@@ -303,7 +305,7 @@ fn test_count_nodes() {
         nodes,
         ..Default::default()
     };
-    r.count_nodes_uses();
+    r.count_nodes_uses().unwrap();
     assert_eq!(2, r.nodes[&NodeId(1)].uses);
     assert_eq!(1, r.nodes[&NodeId(2)].uses);
     assert_eq!(2, r.nodes[&NodeId(3)].uses);
@@ -334,7 +336,7 @@ fn test_split() {
         ways,
         ..Default::default()
     };
-    r.count_nodes_uses();
+    r.count_nodes_uses().unwrap();
     let edges = r.edges();
     assert_eq!(3, edges.len());
 }

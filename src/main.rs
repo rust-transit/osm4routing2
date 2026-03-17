@@ -27,6 +27,6 @@ fn main() {
         Ok((nodes, edges)) => {
             osm4routing::writers::csv(nodes, edges, &cli.nodes_file, &cli.edges_file)
         }
-        Err(error) => println!("Error: {}", error),
+        Err(error) => eprintln!("Error: {}", error),
     }
 }
