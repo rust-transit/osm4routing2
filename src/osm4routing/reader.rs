@@ -1,3 +1,8 @@
+//! PBF file reading and graph construction.
+//!
+//! This module provides functionality to read OpenStreetMap PBF files
+//! and convert them into a routing graph structure (nodes and edges).
+
 use super::categorize::*;
 use super::error::Error;
 use super::models::*;
@@ -5,11 +10,17 @@ use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use osmpbfreader::objects::{NodeId, WayId};
 use std::path::Path;
 
-// Way as represented in OpenStreetMap
+/// Internal representation of an OpenStreetMap way during processing.
+///
+/// Stores the node references and computed properties before conversion to edges.
 struct Way {
+    /// The OSM way ID.
     id: WayId,
+    /// Ordered list of node IDs that make up this way.
     nodes: Vec<NodeId>,
+    /// Computed accessibility properties from OSM tags.
     properties: EdgeProperties,
+    /// Tags requested to be preserved (via `read_tag`).
     tags: HashMap<String, String>,
 }
 
@@ -24,22 +35,59 @@ impl Default for Way {
     }
 }
 
+/// Configurable reader for extracting routing graphs from PBF files.
+///
+/// Uses the builder pattern to allow filtering and customization of the
+/// extraction process.
+///
+/// # Example
+///
+/// ```no_run
+/// use osm4routing::Reader;
+///
+/// let (nodes, edges) = Reader::new()
+///     .reject("highway", "footway")
+///     .read("data.osm.pbf")
+///     .unwrap();
+/// ```
 #[derive(Default)]
 pub struct Reader {
+    /// Map of node IDs to their full data, populated during `read_nodes`.
     nodes: HashMap<NodeId, Node>,
+    /// List of ways to be converted to edges.
     ways: Vec<Way>,
+    /// Set of node IDs referenced by ways (used to filter which nodes to load).
     nodes_to_keep: HashSet<NodeId>,
+    /// Tags that should cause ways to be excluded. Use "*" to match any value.
     forbidden_tags: HashMap<String, HashSet<String>>,
+    /// Tags that must be present for ways to be included. Use "*" to match any value.
     required_tags: HashMap<String, HashSet<String>>,
+    /// Additional OSM tags to preserve in edge output.
     tags_to_read: HashSet<String>,
+    /// Whether to merge consecutive edges from different ways at non-intersections.
     should_merge_ways: bool,
 }
 
 impl Reader {
+    /// Creates a new reader with default configuration.
     pub fn new() -> Reader {
         Reader::default()
     }
 
+    /// Adds a tag filter to reject ways with a specific key-value pair.
+    ///
+    /// Use "*" as the value to reject any way with the given key, regardless of value.
+    /// Can be chained to add multiple reject filters.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use osm4routing::Reader;
+    ///
+    /// let reader = Reader::new()
+    ///     .reject("area", "yes")
+    ///     .reject("access", "private");
+    /// ```
     pub fn reject(mut self, key: &str, value: &str) -> Self {
         self.forbidden_tags
             .entry(key.to_string())
@@ -48,6 +96,25 @@ impl Reader {
         self
     }
 
+    /// Requires ways to have a specific tag key-value pair.
+    ///
+    /// Use "*" as the value to accept any value for the given key.
+    /// Multiple requirements can be added, and ways matching ANY requirement are included.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use osm4routing::Reader;
+    ///
+    /// // Only include railways
+    /// let reader = Reader::new()
+    ///     .require("railway", "rail");
+    ///
+    /// // Include primary or secondary roads
+    /// let reader = Reader::new()
+    ///     .require("highway", "primary")
+    ///     .require("highway", "secondary");
+    /// ```
     pub fn require(mut self, key: &str, value: &str) -> Self {
         self.required_tags
             .entry(key.to_string())
@@ -56,16 +123,61 @@ impl Reader {
         self
     }
 
+    /// Requests that a specific OSM tag be preserved in the edge output.
+    ///
+    /// By default, only computed accessibility properties are stored.
+    /// Use this to keep additional tag values for later analysis.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use osm4routing::Reader;
+    ///
+    /// let (nodes, edges) = Reader::new()
+    ///     .read_tag("name")
+    ///     .read_tag("maxspeed")
+    ///     .read("data.osm.pbf")
+    ///     .unwrap();
+    ///
+    /// // Access the preserved tags
+    /// if let Some(name) = edges[0].tags.get("name") {
+    ///     println!("Road name: {}", name);
+    /// }
+    /// ```
     pub fn read_tag(mut self, key: &str) -> Self {
         self.tags_to_read.insert(key.to_string());
         self
     }
 
+    /// Enables merging of consecutive edges from different OSM ways.
+    ///
+    /// When enabled, edges that meet at a node with no other connections
+    /// (degree 2) and have the same properties and tags will be merged
+    /// into a single edge. This is useful when tags change mid-way (e.g.,
+    /// a tunnel) but the road is topologically continuous.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use osm4routing::Reader;
+    ///
+    /// let (nodes, edges) = Reader::new()
+    ///     .merge_ways()
+    ///     .read("data.osm.pbf")
+    ///     .unwrap();
+    /// ```
     pub fn merge_ways(mut self) -> Self {
         self.should_merge_ways = true;
         self
     }
 
+    /// Counts how many times each node is referenced by ways.
+    ///
+    /// Endpoint nodes are counted twice to ensure dead-end roads are
+    /// preserved. Nodes with uses > 1 become intersection points where
+    /// ways are split into edges.
+    ///
+    /// Returns an error if a way references a node not present in `nodes`.
     fn count_nodes_uses(&mut self) -> Result<(), Error> {
         for way in &self.ways {
             for (i, node_id) in way.nodes.iter().enumerate() {
@@ -84,6 +196,13 @@ impl Reader {
         Ok(())
     }
 
+    /// Splits an OSM way into multiple edges at intersection points.
+    ///
+    /// A way is split at every node where `uses > 1` (intersection).
+    /// Creates edges with unique IDs in the format "{way_id}-{index}".
+    ///
+    /// # Arguments
+    /// * `way` - The way to split.
     fn split_way(&self, way: &Way) -> Vec<Edge> {
         let mut result = Vec::new();
 
@@ -116,9 +235,20 @@ impl Reader {
         result
     }
 
-    // An OSM way can be split even if it’s — in a topologicial sense — the same edge
-    // For instance a road crossing a river, will be split to allow a tag bridge=yes
-    // Even if there was no crossing
+    /// Recursively merges consecutive edges at degree-2 nodes.
+    ///
+    /// OSM ways can be split by tag changes (e.g., bridge=yes) even when
+    /// there is no topological intersection. This function merges such
+    /// edges to simplify the routing graph.
+    ///
+    /// Two edges are merged when:
+    /// - They meet at a node with exactly 2 edge connections (degree 2)
+    /// - They have identical accessibility properties
+    /// - They have identical tags (if tags_to_read is used)
+    /// - They haven't been merged in a previous iteration
+    ///
+    /// # Arguments
+    /// * `edges` - The edges to potentially merge.
     fn do_merge_edges(&mut self, edges: Vec<Edge>) -> Vec<Edge> {
         let initial_edges_count = edges.len();
 
@@ -177,6 +307,11 @@ impl Reader {
         }
     }
 
+    /// Checks if a way should be rejected based on user-specified filters.
+    ///
+    /// Returns true if the way should be excluded because:
+    /// - It has a forbidden tag (via `reject`)
+    /// - It doesn't have any required tag (via `require`)
     fn is_user_rejected(&self, way: &osmpbfreader::Way) -> bool {
         let meet_required_tags = self.required_tags.is_empty()
             || way.tags.iter().any(|(key, val)| {
@@ -196,6 +331,15 @@ impl Reader {
         !meet_required_tags || has_forbidden_tags
     }
 
+    /// Reads all ways from the PBF file and populates `ways` and `nodes_to_keep`.
+    ///
+    /// Processes each way in the file:
+    /// 1. Computes accessibility properties from OSM tags
+    /// 2. Filters by accessibility and user-specified rules
+    /// 3. Stores way data and marks referenced nodes for loading
+    ///
+    /// # Arguments
+    /// * `file` - Open file handle to the PBF file.
     fn read_ways(&mut self, file: std::fs::File) {
         let mut pbf = osmpbfreader::OsmPbfReader::new(file);
         for obj in pbf.par_iter().flatten() {
@@ -224,6 +368,13 @@ impl Reader {
         }
     }
 
+    /// Reads all nodes from the PBF file that are referenced by ways.
+    ///
+    /// Only loads nodes that are in `nodes_to_keep` (populated by `read_ways`).
+    /// Removes loaded nodes from `nodes_to_keep` as they are found.
+    ///
+    /// # Arguments
+    /// * `file` - Open file handle to the PBF file.
     fn read_nodes(&mut self, file: std::fs::File) {
         let mut pbf = osmpbfreader::OsmPbfReader::new(file);
         self.nodes.reserve(self.nodes_to_keep.len());
@@ -247,6 +398,9 @@ impl Reader {
         }
     }
 
+    /// Returns all nodes that are part of the routing graph.
+    ///
+    /// Filters out nodes that are not used by any edge (uses <= 1).
     fn nodes(&self) -> Vec<Node> {
         self.nodes
             .values()
@@ -255,6 +409,7 @@ impl Reader {
             .collect()
     }
 
+    /// Converts all ways to edges by splitting at intersections.
     fn edges(&self) -> Vec<Edge> {
         self.ways
             .iter()
@@ -262,6 +417,33 @@ impl Reader {
             .collect()
     }
 
+    /// Reads the PBF file and constructs the routing graph.
+    ///
+    /// This is the main entry point for extracting routing data.
+    /// The file is read twice: once for ways, then for nodes.
+    ///
+    /// # Arguments
+    /// * `filename` - Path to the OSM PBF file.
+    ///
+    /// # Returns
+    /// A tuple of (nodes, edges) representing the routing graph.
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - The file cannot be opened
+    /// - A way references a node not present in the file
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use osm4routing::Reader;
+    ///
+    /// let (nodes, edges) = Reader::new()
+    ///     .read("map.osm.pbf")
+    ///     .expect("Failed to read PBF file");
+    ///
+    /// println!("Loaded {} nodes and {} edges", nodes.len(), edges.len());
+    /// ```
     pub fn read<P: AsRef<Path>>(&mut self, filename: P) -> Result<(Vec<Node>, Vec<Edge>), Error> {
         let file = std::fs::File::open(filename.as_ref())?;
         self.read_ways(file);
@@ -278,7 +460,20 @@ impl Reader {
     }
 }
 
-// Read all the nodes and ways of the osm.pbf file
+/// Convenience function to read a PBF file with default settings.
+///
+/// This is equivalent to:
+/// ```ignore
+/// osm4routing::Reader::new().read(filename)
+/// ```
+///
+/// For more control over the extraction process, use [`Reader`] directly.
+///
+/// # Arguments
+/// * `filename` - Path to the OSM PBF file.
+///
+/// # Returns
+/// A tuple of (nodes, edges) representing the routing graph.
 pub fn read<P: AsRef<Path>>(filename: P) -> Result<(Vec<Node>, Vec<Edge>), Error> {
     Reader::new().read(filename)
 }

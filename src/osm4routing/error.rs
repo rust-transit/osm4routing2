@@ -1,10 +1,18 @@
+//! Error types for osm4routing.
+//!
+//! This module defines the error types that can be returned by the library.
+
 use osmpbfreader::NodeId;
 use std::fmt;
 
+/// Errors that can occur when reading OSM data.
 #[derive(Debug)]
 pub enum Error {
+    /// An I/O error occurred while reading the file.
     Io(std::io::Error),
+    /// An error occurred while writing CSV output.
     Csv(csv::Error),
+    /// A node referenced in a way was not found in the data.
     MissingNode(NodeId),
 }
 
