@@ -379,21 +379,21 @@ impl Reader {
         let mut pbf = osmpbfreader::OsmPbfReader::new(file);
         self.nodes.reserve(self.nodes_to_keep.len());
         for obj in pbf.par_iter().flatten() {
-            if let osmpbfreader::OsmObj::Node(node) = obj {
-                if self.nodes_to_keep.contains(&node.id) {
-                    self.nodes_to_keep.remove(&node.id);
-                    self.nodes.insert(
-                        node.id,
-                        Node {
-                            id: node.id,
-                            coord: geo_types::Coord {
-                                x: node.lon(),
-                                y: node.lat(),
-                            },
-                            uses: 0,
+            if let osmpbfreader::OsmObj::Node(node) = obj
+                && self.nodes_to_keep.contains(&node.id)
+            {
+                self.nodes_to_keep.remove(&node.id);
+                self.nodes.insert(
+                    node.id,
+                    Node {
+                        id: node.id,
+                        coord: geo_types::Coord {
+                            x: node.lon(),
+                            y: node.lat(),
                         },
-                    );
-                }
+                        uses: 0,
+                    },
+                );
             }
         }
     }

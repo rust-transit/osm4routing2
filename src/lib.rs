@@ -84,7 +84,7 @@ pub use crate::osm4routing::categorize::{
 };
 pub use crate::osm4routing::error::Error;
 pub use crate::osm4routing::models::*;
-pub use crate::osm4routing::reader::{read, Reader};
+pub use crate::osm4routing::reader::{Reader, read};
 pub use crate::osm4routing::writers;
 
 // Reexpose crates that are part of the API
