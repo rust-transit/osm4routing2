@@ -25,8 +25,16 @@ fn main() {
 
     match reader.read(&cli.source_pbf) {
         Ok((nodes, edges)) => {
-            osm4routing::writers::csv(nodes, edges, &cli.nodes_file, &cli.edges_file)
+            if let Err(error) =
+                osm4routing::writers::csv(nodes, edges, &cli.nodes_file, &cli.edges_file)
+            {
+                eprintln!("Error: {}", error);
+                std::process::exit(1);
+            }
         }
-        Err(error) => println!("Error: {}", error),
+        Err(error) => {
+            eprintln!("Error: {}", error);
+            std::process::exit(1);
+        }
     }
 }

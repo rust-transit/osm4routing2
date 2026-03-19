@@ -1,13 +1,24 @@
+//! Data models for nodes and edges in a routing graph.
+//!
+//! This module defines the core data structures used to represent
+//! the routing network extracted from OpenStreetMap data.
+
 use ahash::HashMap;
 use std::hash::{Hash, Hasher};
 
 use super::categorize::EdgeProperties;
 pub use osmpbfreader::objects::{NodeId, WayId};
 
-// Coord are coordinates in decimal degress WGS84
+/// Coordinate type alias for WGS84 coordinates in decimal degrees.
+///
+/// Uses x for longitude and y for latitude.
 type Coord = geo_types::Coord<f64>;
 
+/// Trait for calculating distances between coordinates.
 pub trait Distance {
+    /// Calculate the great-circle distance to another coordinate in meters.
+    ///
+    /// Uses the haversine formula with Earth's mean radius of 6,378,100 meters.
     fn distance_to(&self, end: Coord) -> f64;
 }
 
@@ -28,11 +39,20 @@ impl Distance for Coord {
     }
 }
 
-// Node is the OpenStreetMap node
+/// A node in the routing graph, representing an OpenStreetMap node.
+///
+/// Nodes are the vertices of the routing graph where edges connect.
+/// The `uses` field tracks how many ways reference this node, which
+/// is used to identify intersection points when splitting ways into edges.
 #[derive(Copy, Clone, Debug)]
 pub struct Node {
+    /// The OpenStreetMap node ID.
     pub id: NodeId,
+    /// The geographical coordinates (longitude, latitude) in WGS84.
     pub coord: Coord,
+    /// Count of how many times this node is referenced by ways.
+    ///
+    /// Endpoints of ways are counted twice to ensure dead-ends are preserved.
     pub uses: i16,
 }
 
@@ -46,16 +66,28 @@ impl Default for Node {
     }
 }
 
-// Edge is a topological representation with only two extremities and no geometry
+/// An edge in the routing graph, representing a traversable segment between two nodes.
+///
+/// Edges are created by splitting OpenStreetMap ways at intersection points.
+/// Each edge has a unique ID (different from the OSM way ID, which can be shared
+/// by multiple edges if a way is split).
 #[derive(Clone, Debug)]
 pub struct Edge {
+    /// Unique identifier for this edge, typically "{way_id}-{index}".
     pub id: String,
+    /// The original OpenStreetMap way ID.
     pub osm_id: WayId,
+    /// The starting node of this edge.
     pub source: NodeId,
+    /// The ending node of this edge.
     pub target: NodeId,
+    /// The geometry of this edge as a sequence of coordinates.
     pub geometry: Vec<Coord>,
+    /// Accessibility properties for different transportation modes.
     pub properties: EdgeProperties,
+    /// The sequence of node IDs along this edge (including source and target).
     pub nodes: Vec<NodeId>,
+    /// Additional OSM tags requested by the user.
     pub tags: HashMap<String, String>,
 }
 
@@ -89,7 +121,24 @@ impl Default for Edge {
 }
 
 impl Edge {
-    // Geometry in the well known format
+    /// Returns the geometry as a Well-Known Text (WKT) LINESTRING.
+    ///
+    /// Coordinates are formatted with 7 decimal places of precision.
+    ///
+    /// # Example
+    /// ```
+    /// use osm4routing::Edge;
+    /// use geo_types::Coord;
+    ///
+    /// let edge = Edge {
+    ///     geometry: vec![
+    ///         Coord { x: 0.0, y: 0.0 },
+    ///         Coord { x: 1.0, y: 1.0 },
+    ///     ],
+    ///     ..Default::default()
+    /// };
+    /// assert!(edge.as_wkt().contains("LINESTRING"));
+    /// ```
     pub fn as_wkt(&self) -> String {
         let coords: Vec<String> = self
             .geometry
@@ -100,7 +149,9 @@ impl Edge {
         format!("LINESTRING({})", coords.as_slice().join(", "))
     }
 
-    // Length in meters of the edge
+    /// Calculate the total length of the edge in meters.
+    ///
+    /// Sums the great-circle distances between consecutive coordinates.
     pub fn length(&self) -> f64 {
         self.geometry
             .windows(2)
@@ -108,7 +159,12 @@ impl Edge {
             .sum()
     }
 
-    // Length in meter until the given node
+    /// Calculate the length from the start of the edge to a specific node.
+    ///
+    /// Returns 0.0 if the node is not found on this edge or is the first node.
+    ///
+    /// # Arguments
+    /// * `node` - The node ID to measure to.
     pub fn length_until(&self, node: &NodeId) -> f64 {
         let mut length = 0.;
         for i in 1..(self.nodes.len()) {
@@ -120,8 +176,10 @@ impl Edge {
         0.
     }
 
-    // Changes the direction of the geometry, source and target
-    // Returns a new Edge
+    /// Returns a new edge with reversed direction.
+    ///
+    /// The source and target are swapped, and the geometry and node sequence
+    /// are reversed.
     pub fn reverse(mut self) -> Self {
         self.nodes.reverse();
         self.geometry.reverse();
@@ -129,7 +187,10 @@ impl Edge {
         self
     }
 
-    // Merges two edges together. It supposes that self.target == e2.source and will panic otherwise
+    /// Merges two edges together, assuming this edge's target equals other's source.
+    ///
+    /// # Panics
+    /// Panics if `self.target != other.source`.
     fn unsafe_merge(mut self, other: Self) -> Self {
         assert!(self.target == other.source);
         self.id = format!("{}-{}", self.id, other.id);
@@ -139,8 +200,17 @@ impl Edge {
         self
     }
 
-    // Creates a new edges by stiching together two edges at node `node`
-    // Will panic if the node is not a common extremity for both
+    /// Creates a new edge by stitching together two edges at a common node.
+    ///
+    /// Automatically handles reversing edges as needed to ensure proper connectivity.
+    ///
+    /// # Arguments
+    /// * `edge1` - The first edge to merge.
+    /// * `edge2` - The second edge to merge.
+    /// * `node` - The common node where the edges meet.
+    ///
+    /// # Panics
+    /// Panics if `node` is not an endpoint of both edges.
     pub fn merge(edge1: &Self, edge2: &Self, node: NodeId) -> Self {
         let edge1 = edge1.clone();
         let edge2 = edge2.clone();

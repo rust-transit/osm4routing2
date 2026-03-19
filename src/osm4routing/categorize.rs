@@ -1,48 +1,87 @@
+//! Accessibility categorization for transportation modes.
+//!
+//! This module defines enums and logic for determining whether an edge
+//! is accessible by foot, car, bike, or train based on OpenStreetMap tags.
+
 use serde::Serialize;
 
+/// Accessibility level for pedestrians.
 #[derive(Clone, Copy, Debug, Serialize, PartialEq)]
 pub enum FootAccessibility {
+    /// Not yet determined from tags.
     Unknown,
+    /// Explicitly forbidden for pedestrians.
     Forbidden,
+    /// Allowed for pedestrians.
     Allowed,
 }
+
+/// Accessibility level for cars, including road classification.
 #[derive(Clone, Copy, Debug, Serialize, PartialEq)]
 pub enum CarAccessibility {
+    /// Not yet determined from tags.
     Unknown,
+    /// Forbidden for cars.
     Forbidden,
-    Residential, // http://wiki.openstreetmap.org/wiki/Tag:highway%3Dresidential
-    Tertiary,    // http://wiki.openstreetmap.org/wiki/Tag:highway%3Dtertiary
-    Secondary,   // http://wiki.openstreetmap.org/wiki/Tag:highway%3Dsecondary
-    Primary,     // http://wiki.http://wiki.openstreetmap.org/wiki/Tag:highway%3Dprimary
-    Trunk,       // http://wiki.openstreetmap.org/wiki/Tag:highway%3Dtrunk
-    Motorway,    // http://wiki.openstreetmap.org/wiki/Tag:highway%3Dmotorway
+    /// http://wiki.openstreetmap.org/wiki/Tag:highway%3Dresidential
+    Residential,
+    /// http://wiki.openstreetmap.org/wiki/Tag:highway%3Dtertiary
+    Tertiary,
+    /// http://wiki.openstreetmap.org/wiki/Tag:highway%3Dsecondary
+    Secondary,
+    /// http://wiki.http://wiki.openstreetmap.org/wiki/Tag:highway%3Dprimary
+    Primary,
+    /// http://wiki.openstreetmap.org/wiki/Tag:highway%3Dtrunk
+    Trunk,
+    /// http://wiki.openstreetmap.org/wiki/Tag:highway%3Dmotorway
+    Motorway,
 }
 
+/// Accessibility level for bicycles.
 #[derive(Clone, Copy, Debug, Serialize, PartialEq)]
 pub enum BikeAccessibility {
+    /// Not yet determined from tags.
     Unknown,
+    /// Forbidden for bicycles.
     Forbidden,
-    Allowed, // can be used by a bike, but the traffic might be shared with a car
-    Lane,    // narrow lane dedicated for bikes, without physical separation from other traffic
-    Busway,  // bikes are allowed on the bus lane
-    Track,   // physically separated for any other traffic
+    /// Allowed, but traffic is shared with cars.
+    Allowed,
+    /// Narrow lane dedicated for bikes without physical separation.
+    Lane,
+    /// Bikes are allowed on the bus lane.
+    Busway,
+    /// Physically separated from other traffic.
+    Track,
 }
 
+/// Accessibility level for trains.
 #[derive(Clone, Copy, Debug, Serialize, PartialEq)]
 pub enum TrainAccessibility {
+    /// Not yet determined from tags.
     Unknown,
+    /// Forbidden for trains.
     Forbidden,
+    /// Railway/track is present.
     Allowed,
 }
 
-// Edgeself contains what mode can use the edge in each direction
+/// Properties of an edge describing accessibility for all transportation modes.
+///
+/// Tracks accessibility separately for forward and backward directions
+/// where applicable (cars and bikes).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct EdgeProperties {
+    /// Pedestrian accessibility (direction-independent).
     pub foot: FootAccessibility,
+    /// Car accessibility in the forward direction.
     pub car_forward: CarAccessibility,
+    /// Car accessibility in the backward direction.
     pub car_backward: CarAccessibility,
+    /// Bike accessibility in the forward direction.
     pub bike_forward: BikeAccessibility,
+    /// Bike accessibility in the backward direction.
     pub bike_backward: BikeAccessibility,
+    /// Train accessibility (direction-independent).
     pub train: TrainAccessibility,
 }
 
@@ -60,7 +99,12 @@ impl Default for EdgeProperties {
 }
 
 impl EdgeProperties {
-    // Normalize fills UNKNOWN fields
+    /// Normalize properties by converting Unknown values to concrete values.
+    ///
+    /// Applies the following rules:
+    /// - If `car_backward` is Unknown, copy from `car_forward`
+    /// - If `bike_backward` is Unknown, copy from `bike_forward`
+    /// - Any remaining Unknown values become Forbidden
     pub fn normalize(&mut self) {
         if self.car_backward == CarAccessibility::Unknown {
             self.car_backward = self.car_forward;
@@ -88,7 +132,9 @@ impl EdgeProperties {
         }
     }
 
-    // Accessible means that at least one mean of transportation can use it in one direction
+    /// Check if at least one transportation mode can use this edge in any direction.
+    ///
+    /// Returns `false` if all modes are Forbidden.
     pub fn accessible(self) -> bool {
         self.bike_forward != BikeAccessibility::Forbidden
             || self.bike_backward != BikeAccessibility::Forbidden
@@ -98,12 +144,32 @@ impl EdgeProperties {
             || self.train != TrainAccessibility::Forbidden
     }
 
+    /// Update properties based on an OSM tag key-value pair (owned strings).
+    ///
+    /// # Arguments
+    /// * `key_string` - The OSM tag key.
+    /// * `val_string` - The OSM tag value.
     pub fn update(&mut self, key_string: String, val_string: String) {
         let key = key_string.as_str();
         let val = val_string.as_str();
         self.update_with_str(key, val);
     }
 
+    /// Update properties based on an OSM tag key-value pair (string slices).
+    ///
+    /// Recognizes the following tags:
+    /// - `highway`: road classification (cycleway, path, primary, secondary, etc.)
+    /// - `pedestrian`/`foot`: pedestrian access
+    /// - `cycleway`: bike lane/track configuration
+    /// - `bicycle`: bike access
+    /// - `busway`: bus lane access for bikes
+    /// - `oneway`: one-way restriction
+    /// - `junction=roundabout`: roundabout handling
+    /// - `railway`: train access
+    ///
+    /// # Arguments
+    /// * `key` - The OSM tag key.
+    /// * `val` - The OSM tag value.
     pub fn update_with_str(&mut self, key: &str, val: &str) {
         match key {
             "highway" => match val {
@@ -152,8 +218,6 @@ impl EdgeProperties {
                 _ => self.foot = FootAccessibility::Allowed,
             },
 
-            // http://wiki.openstreetmap.org/wiki/Cycleway
-            // http://wiki.openstreetmap.org/wiki/Map_Features#Cycleway
             "cycleway" => match val {
                 "track" => self.bike_forward = BikeAccessibility::Track,
                 "opposite_track" => self.bike_backward = BikeAccessibility::Track,
