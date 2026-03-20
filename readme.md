@@ -36,7 +36,7 @@ let (nodes, edges) = osm4routing::read("some_data.osm.pbf")?;
 
 ```
 
-If you wand to reject certain edges based on their tag, use the `Reader` (it also accepts "*" to reject every value):
+If you want to reject certain edges based on their tag, use the `Reader` (it also accepts "*" to reject every value):
 
 ```
 let (nodes, edges) = osm4routing::Reader::new().reject("area", "yes").read("some_data.osm.pbf")?;
@@ -56,7 +56,7 @@ let (nodes, edges) = osm4routing::Reader::new().read_tag("highway").read("some_d
 
 ```
 
-If want to contract edges that come from different OpenStreetMap ways, but where there is no intersection (that can happen when the tags change, e.g. a tunnel):
+If ypu want to contract edges that come from different OpenStreetMap ways, but where there is no intersection (that can happen when the tags change, e.g. a tunnel):
 
 ```
 let (nodes, edges) = osm4routing::Reader::new().merge_ways().read("some_data.osm.pbf")?;
