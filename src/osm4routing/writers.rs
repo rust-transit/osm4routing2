@@ -96,5 +96,3 @@ pub fn csv(
 
     Ok(())
 }
-
-// pub fn pg(nodes: Vec<Node>, edges: Vec<Edge>) {}

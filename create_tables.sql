@@ -11,8 +11,6 @@ CREATE TABLE nodes (
     latitude DOUBLE PRECISION
 );
 
---id,osm_id,source,target,length,foot,car_forward,car_backward,bike_forward,bike_backward,train,wkt
-
 CREATE TABLE edges (
     id TEXT,
 	osm_id BIGINT,
