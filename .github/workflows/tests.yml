@@ -17,10 +17,8 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
-      - name: Test with all features
-        run: cargo test --all-features
-      - name: Test without the default `read-url` feature
-        run: cargo test --no-default-features
+      - name: Test
+        run: cargo test
 
   lints:
     name: Lints
